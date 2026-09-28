@@ -143,7 +143,7 @@ input[type="range"] { width: 100%; accent-color: var(--seg-code); margin: 0; }
 .status.measured { color: var(--measured); }
 .status.estimate { color: var(--estimate); }
 
-ol.plain { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 68ch; }
+ol.plain, ul.plain { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 68ch; }
 footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--ink-3); display: grid; gap: 6px; }
 
 @media (max-width: 720px) {
@@ -165,9 +165,20 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
 <header>
   <div class="meta">Draft · EIP-8288 · 28 September 2026</div>
   <h1>EVM Spend Challenge</h1>
-  <p>A private transfer in the minimal shielded pool comes with a zero-knowledge proof that a program checked the spend. This challenge measures how much that proof costs when the program is EVM bytecode run by an interpreter, compared with the same program compiled directly to RISC-V.</p>
+  <p>Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules. Today the minimal shielded pool writes those rules as a Circom circuit. Under EIP-8288 they could be written as a program and proved by a zkVM. This challenge measures how much that proof costs when the program is EVM bytecode run by an interpreter, compared with the same program compiled directly to RISC-V.</p>
   <p>Entrants submit the EVM bytecode. The score is the number of RISC-V cycles it takes on a fixed version of leanVM. The result informs EIP-8288: if the EVM version costs close to the RISC-V version, applications could keep writing these programs in EVM bytecode, which weakens the performance case for letting them use RISC-V directly.</p>
 </header>
+
+<section aria-labelledby="findings">
+  <h2 id="findings">What we found</h2>
+  <ul class="plain">
+    <li>Plain Solidity takes 2.66 times the RISC-V cycles. Most of the extra is code the compiler generates around each hash call.</li>
+    <li>Hand-optimized Yul takes 1.36 times. A program that only makes the 55 hash calls, with none of the checks, takes 1.22 times, so entries have little room left.</li>
+    <li>The RISC-V side is already near its best: it takes 1.3% more cycles than a Rust program that only makes the 55 SHA-256 calls.</li>
+    <li>What remains is the interpreter's overhead: 108,125 cycles for the 55 precompile calls themselves, plus the entry's other code. Faster hashing in the zkVM would shrink both sides by the same amount, so the ratio would rise, to about 5.9 times for the Yul entry at 200 cycles per compression.</li>
+    <li>Gas is only a rough guide to this cost. Here, ordinary EVM instructions cost 23 to 27 cycles per unit of gas and the SHA-256 calls about 46.</li>
+  </ul>
+</section>
 
 <section aria-labelledby="setup">
   <h2 id="setup">Setup</h2>
@@ -204,8 +215,8 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
       </tbody>
     </table>
   </div>
-  <p class="note">Cycles are the largest count over the valid test cases. Proof times are medians of six leanVM proofs of one spend, on an Apple M5 Max on AC power, without zero knowledge. Times vary between runs: across three runs, the Solidity baseline took 2.7 to 3.1 times the reference's proof time and the Yul entry 1.5 to 1.8 times.</p>
-  <p>Both entries spend the same cycles as the reference on SHA-256, plus about 108,000 cycles for the interpreter to make the 55 precompile calls. What separates them is the EVM bytecode outside the calls:</p>
+  <p class="note">Cycles are the largest count over the valid test cases. Proof times are medians of six leanVM proofs of one spend, on an Apple M5 Max on AC power, without zero knowledge. Times vary between runs: across three runs, the Solidity baseline took 2.66 to 3.05 times the reference's proof time and the Yul entry 1.47 to 1.77 times.</p>
+  <p>Both entries run the same SHA-256 code as the reference, plus about 108,000 cycles for the interpreter to make the 55 precompile calls. What separates them is the EVM bytecode outside the calls:</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th></th><th class="r">Solidity baseline</th><th class="r">Optimized Yul</th></tr></thead>
@@ -218,7 +229,7 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
       </tbody>
     </table>
   </div>
-  <p>The Solidity baseline executes 8,684 EVM instructions per spend, mostly code the compiler generates around each hash: moving values on the stack, computing and bounds-checking input offsets, and jumps. The Yul entry executes 1,348. It reuses one message buffer, has each precompile call write its result where the next hash reads it, has no loops, never branches on private data, and checks all rules once at the end. It skips checking each call's result, because under the fixed gas limit a SHA-256 call cannot fail.</p>
+  <p>On the transfer case, the Solidity baseline executes 8,684 EVM instructions, mostly code the compiler generates around each hash: moving values on the stack, computing and bounds-checking input offsets, and jumps. The Yul entry executes 1,348. It reuses one message buffer, has each precompile call write its result where the next hash reads it, has no loops, never branches on private data, and checks all rules once at the end. It skips checking each call's result, because under the fixed gas limit a SHA-256 call cannot fail.</p>
 </section>
 
 <section aria-labelledby="explore">
@@ -241,7 +252,7 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
         <label for="hashcost">SHA-256 cycles per compression</label>
         <input type="range" id="hashcost" min="0" max="4261" step="1" value="4261">
         <div class="value" id="hashcost-value">4,261 cycles</div>
-        <div class="hint">Software SHA-256 today: 4,261. Each spend needs 105 compressions.</div>
+        <div class="hint">Software SHA-256 today: 4,261. Each spend needs 105 compressions. An accelerator is modeled as fewer cycles per compression.</div>
       </div>
     </div>
     <div class="bars" aria-hidden="true">
@@ -308,7 +319,14 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
     <li>Every valid case is run on the fixed version of leanVM. The padded trace size must be the same for all valid inputs, because the proof reveals it.</li>
     <li>The score is the largest cycle count over the valid cases. Lower is better.</li>
   </ol>
-  <p>The invalid test cases cover every rule: removing any one rule check from either entry makes a test fail. Entries are EVM bytecode, so other RISC-V zkVMs can prove both versions on the same machine to compare proof times, but the score comes only from the fixed leanVM version. Final timings should use zero knowledge, which Jolt supports and this leanVM version does not.</p>
+  <p>The invalid test cases cover every rule: removing any one rule check from either entry makes a test fail. Entries are EVM bytecode, so other RISC-V zkVMs could prove both versions on the same machine to compare proof times, but the score comes only from the fixed leanVM version. Final timings should use zero knowledge, which Jolt supports and this leanVM version does not.</p>
+</section>
+
+<section aria-labelledby="beyond">
+  <h2 id="beyond">Beyond this challenge</h2>
+  <p>Two questions matter for EIP-8288 that this challenge does not measure.</p>
+  <p><strong>Interpreter cost.</strong> The challenge fixes the interpreter, and its overhead is most of what remains. A second round could let entrants change the interpreter instead: a faster REVM, a direct path for precompile calls, or compiling EVM bytecode to RISC-V before proving. An interpreter must run every EVM program correctly, so it would also need to pass Ethereum's standard execution tests.</p>
+  <p><strong>Stable meaning for immutable programs.</strong> A privacy pool's program must mean the same thing forever. The pool would name it by EVM version and bytecode hash, and the EVM used for proofs would change only by adding opcodes and precompiles in new versions, without gas metering. EVM implementations already keep every past fork's rules, so old versions stay cheap to support. The RISC-V base instruction set is already frozen.</p>
 </section>
 
 <section aria-labelledby="open">

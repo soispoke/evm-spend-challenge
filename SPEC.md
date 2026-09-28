@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cycles. A private transfer in the minimal shielded pool comes with a zero-knowledge proof that a program checked the spend. This challenge measures that program's cost when it is EVM bytecode run by an interpreter, against the same program compiled directly to RISC-V, on a fixed version of leanVM. The Solidity baseline takes 1,225,610 cycles, 2.66 times the RISC-V reference, and an optimized Yul entry takes 625,721, 1.36 times. The result informs whether applications under EIP-8288 can keep their proved programs in EVM bytecode or should be able to use RISC-V directly.
+Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cycles. Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules; under EIP-8288 those rules could be a program proved by a zkVM. This challenge measures that program's cost when it is EVM bytecode run by an interpreter, against the same program compiled directly to RISC-V, on a fixed version of leanVM. The Solidity baseline takes 1,225,610 cycles, 2.66 times the RISC-V reference, and an optimized Yul entry takes 625,721, 1.36 times. The result informs whether applications under EIP-8288 can keep their proved programs in EVM bytecode or should be able to use RISC-V directly.
 
 ## The question
 

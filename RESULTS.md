@@ -18,7 +18,7 @@ On the fixed leanVM machine, the RISC-V reference checks a spend in 460,471 cycl
 
 Cycles span the valid public cases for the reference (20), all 56 public inputs of the correct length for the controls, which check no rules, and 68 public and hidden valid cases for the two entries. EVM instructions are counted on the transfer case with [host/examples/opcode_profile.rs](host/examples/opcode_profile.rs). The controls are not valid spends; they separate parts of the cost. The two EVM controls come from [evm/controls/generate.py](evm/controls/generate.py), and the Rust controls from [statement/src/lib.rs](statement/src/lib.rs).
 
-The RISC-V reference is within about 1% of the best any RISC-V version can do here. Both versions must use the same SHA-256 code, and the reference spends only 6,059 cycles more than the control that makes the 55 SHA-256 calls and nothing else. Against that control, a lower bound rather than a valid program, the Yul entry is 1.38 times and the Solidity baseline 2.70 times.
+The RISC-V reference is close to the best any RISC-V version can do here. Both versions must use the same SHA-256 code, and the reference spends only 6,059 cycles (1.3%) more than the control that makes the 55 SHA-256 calls and nothing else. Against that control, a practical lower bound rather than a valid program, the Yul entry is 1.38 times and the Solidity baseline 2.70 times.
 
 ## Where the EVM cycles go
 
