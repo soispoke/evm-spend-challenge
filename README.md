@@ -1,8 +1,10 @@
 # EVM Spend Challenge
 
+**[Read the explainer](https://soispoke.github.io/evm-spend-challenge/explainer.html)** for a one-page overview with an interactive view of the results.
+
 ## TL;DR
 
-This directory is the complete challenge: its [specification](SPEC.md), the reference statement, the test cases, the scorer, two EVM entries and the [measured results](RESULTS.md). Entrants submit EVM bytecode that checks a privacy-pool spend. The score is the number of RV64IM cycles it takes on a fixed version of leanVM, compared with the same check written in Rust and compiled to RISC-V. The Solidity baseline scores 1,225,610 cycles (2.66 times the reference) and the optimized Yul entry 625,721 (1.36 times). The code is research code tested against a Python oracle; it has not been audited, and the challenge has not launched.
+This repository is the complete challenge: its [specification](SPEC.md), the reference statement, the test cases, the scorer, two EVM entries and the [measured results](RESULTS.md). Entrants submit EVM bytecode that checks a privacy-pool spend. The score is the number of RV64IM cycles it takes on a fixed version of leanVM, compared with the same check written in Rust and compiled to RISC-V. The Solidity baseline scores 1,225,610 cycles (2.66 times the reference) and the optimized Yul entry 625,721 (1.36 times). The code is research code tested against a Python oracle; it has not been audited, and the challenge has not launched.
 
 ## Quick start
 
