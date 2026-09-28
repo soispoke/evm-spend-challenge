@@ -1,0 +1,12 @@
+[package]
+name = "spend-native-guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spend-runtime = { path = "../runtime" }
+spend-sha256 = { path = "../../statement" }
+
+[[bin]]
+name = "spend-native"
+path = "src/main.rs"

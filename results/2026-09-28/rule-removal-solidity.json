@@ -1,0 +1,108 @@
+{
+ "entry": "solidity",
+ "mutants": [
+  {
+   "rule": "length",
+   "caught": true,
+   "failing_cases": [
+    "length-long"
+   ]
+  },
+  {
+   "rule": "index_range",
+   "caught": true,
+   "failing_cases": [
+    "index-range-0x100000",
+    "index-range-0xffffffff"
+   ]
+  },
+  {
+   "rule": "membership",
+   "caught": true,
+   "failing_cases": [
+    "membership-root",
+    "membership-input0-level0",
+    "membership-input0-level9",
+    "membership-input0-level19",
+    "membership-input0-index",
+    "membership-input0-rho",
+    "membership-input0-spend-key",
+    "membership-input0-value",
+    "membership-input1-level0",
+    "membership-input1-level9",
+    "membership-input1-level19",
+    "membership-input1-index",
+    "membership-input1-rho",
+    "membership-input1-spend-key",
+    "membership-input1-value",
+    "membership-dummy-with-value"
+   ]
+  },
+  {
+   "rule": "nonzero_input",
+   "caught": true,
+   "failing_cases": [
+    "nonzero-input-all-dummies"
+   ]
+  },
+  {
+   "rule": "conservation",
+   "caught": true,
+   "failing_cases": [
+    "conservation-output-plus-one",
+    "conservation-output-minus-one",
+    "conservation-fee",
+    "conservation-public-amount",
+    "conservation-wrapping-inputs",
+    "conservation-wrapping-outputs"
+   ]
+  },
+  {
+   "rule": "zero_output_sink",
+   "caught": true,
+   "failing_cases": [
+    "zero-output-without-sink",
+    "zero-output-wrong-position-sink"
+   ]
+  },
+  {
+   "rule": "positive_output_not_sink",
+   "caught": true,
+   "failing_cases": [
+    "positive-output0-sink0",
+    "positive-output0-sink1",
+    "positive-output1-sink0",
+    "positive-output1-sink1"
+   ]
+  },
+  {
+   "rule": "authorizer_nonzero",
+   "caught": true,
+   "failing_cases": [
+    "authorizer-zero"
+   ]
+  },
+  {
+   "rule": "recipient_matches_amount",
+   "caught": true,
+   "failing_cases": [
+    "recipient-missing",
+    "recipient-unexpected"
+   ]
+  },
+  {
+   "rule": "distinct_nullifiers",
+   "caught": true,
+   "failing_cases": [
+    "nullifier-same-note-twice"
+   ]
+  },
+  {
+   "rule": "distinct_outputs",
+   "caught": true,
+   "failing_cases": [
+    "outputs-equal"
+   ]
+  }
+ ]
+}

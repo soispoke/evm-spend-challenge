@@ -1,0 +1,411 @@
+{
+ "statement": "MSP Spend(20), SHA-256 edition, v1",
+ "machine": "leanVM riscv-exploration 1096dedfbe29c72cfff2a2d8d8b420e6ff0d9f2d, RV64IM",
+ "cycles": {
+  "riscv": {
+   "cases": 20,
+   "max_cycles": 460471,
+   "min_cycles": 460354,
+   "failures": [],
+   "padded_cycles": 622872,
+   "witness_log_size": 25
+  },
+  "solidity": {
+   "cases": 68,
+   "max_cycles": 1225610,
+   "min_cycles": 1225610,
+   "failures": [],
+   "padded_cycles": 1836808,
+   "witness_log_size": 27,
+   "bytecode_bytes": 2593
+  },
+  "yul": {
+   "cases": 68,
+   "max_cycles": 625721,
+   "min_cycles": 625697,
+   "failures": [],
+   "padded_cycles": 983496,
+   "witness_log_size": 26,
+   "bytecode_bytes": 1789
+  },
+  "evm-calls-55": {
+   "cases": 56,
+   "max_cycles": 561959,
+   "min_cycles": 561959,
+   "failures": [],
+   "padded_cycles": 917712,
+   "witness_log_size": 26
+  },
+  "evm-calls-0": {
+   "cases": 56,
+   "max_cycles": 6435,
+   "min_cycles": 6435,
+   "failures": [],
+   "padded_cycles": 8352,
+   "witness_log_size": 21
+  },
+  "rust-sha256-only": {
+   "cases": 56,
+   "max_cycles": 454412,
+   "min_cycles": 454412,
+   "failures": [],
+   "padded_cycles": 622744,
+   "witness_log_size": 25
+  },
+  "rust-start-only": {
+   "cases": 56,
+   "max_cycles": 7013,
+   "min_cycles": 7013,
+   "failures": [],
+   "padded_cycles": 8480,
+   "witness_log_size": 21
+  }
+ },
+ "cycles_over_reference": {
+  "solidity": 2.662,
+  "yul": 1.359,
+  "evm-calls-55": 1.22
+ },
+ "cycles_over_sha256_only_control": {
+  "solidity": 2.697,
+  "yul": 1.377
+ },
+ "breakdown": {
+  "sha256": 447399,
+  "sha256_per_compression": 4260.9,
+  "precompile_calls": 108125,
+  "precompile_calls_per_call": 1965.9,
+  "evm_start_up": 6435,
+  "bytecode_outside_calls": {
+   "solidity": 663651,
+   "yul": 63762
+  },
+  "bytecode_outside_calls_per_call": {
+   "solidity": 12066.4,
+   "yul": 1159.3
+  },
+  "riscv_outside_sha256": 13072,
+  "extra_over_reference": {
+   "solidity": 765139,
+   "yul": 165250
+  }
+ },
+ "evm_instructions_transfer": {
+  "solidity": {
+   "total": 8684,
+   "by_kind": {
+    "stack": 5002,
+    "arithmetic_and_comparisons": 1911,
+    "jumps": 929,
+    "memory": 612,
+    "calldata": 118,
+    "calls": 110,
+    "other": 2
+   },
+   "peak_evm_memory_bytes": 7424
+  },
+  "yul": {
+   "total": 1348,
+   "by_kind": {
+    "stack": 827,
+    "arithmetic_and_comparisons": 313,
+    "jumps": 1,
+    "memory": 27,
+    "calldata": 69,
+    "calls": 110,
+    "other": 1
+   },
+   "peak_evm_memory_bytes": 544
+  },
+  "evm-calls-55": {
+   "total": 616,
+   "by_kind": {
+    "stack": 448,
+    "arithmetic_and_comparisons": 0,
+    "jumps": 0,
+    "memory": 55,
+    "calldata": 2,
+    "calls": 110,
+    "other": 1
+   },
+   "peak_evm_memory_bytes": 288
+  },
+  "evm-calls-0": {
+   "total": 11,
+   "by_kind": {
+    "stack": 8,
+    "arithmetic_and_comparisons": 0,
+    "jumps": 0,
+    "memory": 0,
+    "calldata": 2,
+    "calls": 0,
+    "other": 1
+   },
+   "peak_evm_memory_bytes": 288
+  }
+ },
+ "estimates_faster_sha256": [
+  {
+   "cycles_per_compression": 0,
+   "riscv": 13072,
+   "solidity": 778211,
+   "solidity_over_riscv": 59.53,
+   "yul": 178322,
+   "yul_over_riscv": 13.64
+  },
+  {
+   "cycles_per_compression": 200,
+   "riscv": 34072,
+   "solidity": 799211,
+   "solidity_over_riscv": 23.46,
+   "yul": 199322,
+   "yul_over_riscv": 5.85
+  },
+  {
+   "cycles_per_compression": 800,
+   "riscv": 97072,
+   "solidity": 862211,
+   "solidity_over_riscv": 8.88,
+   "yul": 262322,
+   "yul_over_riscv": 2.7
+  }
+ ],
+ "proving": {
+  "final": {
+   "riscv": {
+    "median_s": 0.599,
+    "min_s": 0.35,
+    "max_s": 0.615,
+    "timed_proofs": 6,
+    "peak_memory_gib": 3.52,
+    "proof_kib": 330.0,
+    "verification_ms": 7.7
+   },
+   "evm-solidity": {
+    "median_s": 1.669,
+    "min_s": 1.638,
+    "max_s": 1.778,
+    "timed_proofs": 6,
+    "peak_memory_gib": 10.16,
+    "proof_kib": 330.5,
+    "verification_ms": 10.0
+   },
+   "evm-yul": {
+    "median_s": 1.007,
+    "min_s": 0.951,
+    "max_s": 1.067,
+    "timed_proofs": 6,
+    "peak_memory_gib": 5.49,
+    "proof_kib": 323.3,
+    "verification_ms": 9.5
+   },
+   "evm-calls-55": {
+    "median_s": 0.916,
+    "min_s": 0.85,
+    "max_s": 1.034,
+    "timed_proofs": 6,
+    "peak_memory_gib": 5.11,
+    "proof_kib": 318.9,
+    "verification_ms": 9.1
+   },
+   "rust-sha256-only": {
+    "median_s": 0.62,
+    "min_s": 0.579,
+    "max_s": 0.686,
+    "timed_proofs": 6,
+    "peak_memory_gib": 3.53,
+    "proof_kib": 328.1,
+    "verification_ms": 8.7
+   },
+   "rust-start-only": {
+    "median_s": 0.037,
+    "min_s": 0.035,
+    "max_s": 0.069,
+    "timed_proofs": 6,
+    "peak_memory_gib": 0.24,
+    "proof_kib": 257.3,
+    "verification_ms": 6.2
+   }
+  },
+  "run-1": {
+   "riscv": {
+    "median_s": 0.521,
+    "min_s": 0.338,
+    "max_s": 0.605,
+    "timed_proofs": 6,
+    "peak_memory_gib": 3.51,
+    "proof_kib": 330.0,
+    "verification_ms": 6.7
+   },
+   "evm-solidity": {
+    "median_s": 1.587,
+    "min_s": 1.532,
+    "max_s": 1.633,
+    "timed_proofs": 6,
+    "peak_memory_gib": 10.07,
+    "proof_kib": 330.5,
+    "verification_ms": 9.3
+   },
+   "evm-yul": {
+    "median_s": 0.921,
+    "min_s": 0.883,
+    "max_s": 0.97,
+    "timed_proofs": 6,
+    "peak_memory_gib": 5.46,
+    "proof_kib": 323.3,
+    "verification_ms": 8.8
+   },
+   "evm-calls-55": {
+    "median_s": 0.859,
+    "min_s": 0.777,
+    "max_s": 0.916,
+    "timed_proofs": 6,
+    "peak_memory_gib": 5.1,
+    "proof_kib": 318.9,
+    "verification_ms": 8.7
+   },
+   "rust-sha256-only": {
+    "median_s": 0.608,
+    "min_s": 0.527,
+    "max_s": 0.62,
+    "timed_proofs": 6,
+    "peak_memory_gib": 3.51,
+    "proof_kib": 328.1,
+    "verification_ms": 7.9
+   },
+   "rust-start-only": {
+    "median_s": 0.036,
+    "min_s": 0.035,
+    "max_s": 0.04,
+    "timed_proofs": 6,
+    "peak_memory_gib": 0.24,
+    "proof_kib": 257.3,
+    "verification_ms": 5.8
+   }
+  },
+  "run-2": {
+   "riscv": {
+    "median_s": 0.612,
+    "min_s": 0.364,
+    "max_s": 0.629,
+    "timed_proofs": 6,
+    "peak_memory_gib": 3.5,
+    "proof_kib": 330.0,
+    "verification_ms": 8.6
+   },
+   "evm-solidity": {
+    "median_s": 1.629,
+    "min_s": 1.606,
+    "max_s": 1.681,
+    "timed_proofs": 6,
+    "peak_memory_gib": 10.06,
+    "proof_kib": 330.5,
+    "verification_ms": 10.2
+   },
+   "evm-yul": {
+    "median_s": 0.9,
+    "min_s": 0.859,
+    "max_s": 0.977,
+    "timed_proofs": 6,
+    "peak_memory_gib": 5.48,
+    "proof_kib": 323.3,
+    "verification_ms": 9.4
+   },
+   "evm-calls-55": {
+    "median_s": 0.893,
+    "min_s": 0.829,
+    "max_s": 0.92,
+    "timed_proofs": 6,
+    "peak_memory_gib": 5.11,
+    "proof_kib": 318.9,
+    "verification_ms": 9.2
+   },
+   "rust-sha256-only": {
+    "median_s": 0.608,
+    "min_s": 0.546,
+    "max_s": 0.622,
+    "timed_proofs": 6,
+    "peak_memory_gib": 3.5,
+    "proof_kib": 328.1,
+    "verification_ms": 7.5
+   },
+   "rust-start-only": {
+    "median_s": 0.035,
+    "min_s": 0.034,
+    "max_s": 0.038,
+    "timed_proofs": 6,
+    "peak_memory_gib": 0.24,
+    "proof_kib": 257.3,
+    "verification_ms": 6.0
+   }
+  }
+ },
+ "proving_time_ratio_range_over_riscv": {
+  "evm-solidity": [
+   2.66,
+   2.79,
+   3.05
+  ],
+  "evm-yul": [
+   1.47,
+   1.68,
+   1.77
+  ]
+ },
+ "proving_conditions": "transfer case; per program and round one warmup and two timed proofs, interleaved; Apple M5 Max, Now drawing from 'AC Power'; no zero knowledge",
+ "validation": {
+  "public_cases": {
+   "cases": 59,
+   "valid": 20,
+   "invalid": 39,
+   "rejected_on_leanvm": {
+    "riscv": true,
+    "solidity": true,
+    "yul": true
+   }
+  },
+  "hidden_seeds": {
+   "scored": {
+    "solidity": [
+     101,
+     202
+    ],
+    "yul": [
+     303,
+     404
+    ]
+   },
+   "checked": [
+    1,
+    2,
+    3
+   ],
+   "all_passed": true
+  },
+  "rule_removal_caught": {
+   "solidity": "11 of 11",
+   "yul": "11 of 11"
+  },
+  "constant_padded_trace": true
+ },
+ "artifacts_sha256": {
+  "fixtures/public.json": "fd2189ef58c7013453e7ea88b1c2ffa8010cdc0518c568a9aad140c8fc2c8dde",
+  "oracle/spend_sha256.py": "e9e3eeb5b829e849e75d2512002cca980795c3eb9a677648b0d7805cb22dc1e2",
+  "statement/src/lib.rs": "adacb3341aeb7922d97bd8f770d776b13b6d70fa9d5882c88290c4e87a7f2c79",
+  "engine/src/lib.rs": "e5f2f2c553bb3ff673bfe7800b990ede1e8ddebee915ca7b75af73b7ff0a523e",
+  "evm/src/SpendSha256.sol": "5a1fcb60e25d21856f6e65b33ade26845da18742a389a07da268815cea89e3c6",
+  "evm/baseline.hex": "9ff634a95b430539aebe27f1f22fdbf884db80ea5ef83db4531a5e23e79521a6",
+  "evm/yul/generate.py": "482c0caed86f24392272531a28beaf473a33835973774c94355d90351999cb95",
+  "evm/yul/bytecode.hex": "f36a49a0fbdb104383849b9fd02dcdb825af6d2b429d92e09eb5b1bac080dbcc",
+  "evm/controls/calls-55.hex": "4d42f7af2bf3fee14a92b242e7412b32e6c6f0a2903020ba614a1cb116520362",
+  "evm/controls/calls-0.hex": "b3010650931fb319f8922616394edf0e9ba658d2fc29f04d3711f256ef73f30e",
+  "timed_elfs": {
+   "riscv": "6b87a3171105b85043abc60988ec37ffe967d8c7a5d804b1515cb2ac12ac0488",
+   "evm-solidity": "bea250276d13efb24386a1288106ad22c2c4b5ddda5cea4af9a2f389feab6b38",
+   "evm-yul": "36e5cfaf11f6517bcc2809933c988bb8001783d936998f54f9b8a16e06e4b35f",
+   "evm-calls-55": "6f8a91b2a14173fdd112c005cbb01bce52e2364d22905115176160daa24ebd2e",
+   "rust-sha256-only": "2b4b58973ebd54db61628b747fe61e0651d2b1d31d6b675cfffd7d375af15bd3",
+   "rust-start-only": "5c06aadee57139f52815f922853589ae83b810ad149531d4e6756a77699bb1cd"
+  }
+ }
+}

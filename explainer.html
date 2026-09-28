@@ -1,0 +1,376 @@
+<title>EVM Spend Challenge</title>
+<style>
+:root {
+  --bg: #FFFFFF;
+  --bg-soft: #F7F7F9;
+  --bg-sunk: #EEEDF3;
+  --ink: #121212;
+  --ink-2: #4E4D57;
+  --ink-3: #74737D;
+  --line: #E4E3EA;
+  --line-strong: #CCCBD5;
+  --link: #5C1EB4;
+  --entry: #6C24DF;
+  --entry-soft: #F2EAFE;
+  --seg-code: #6C24DF;
+  --seg-call: #BD3B87;
+  --seg-hash: #CFCED7;
+  --on-fill: #FFFFFF;
+  --measured: #0E8074;
+  --estimate: #8A5A00;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111014;
+    --bg-soft: #19181E;
+    --bg-sunk: #242329;
+    --ink: #EDEDF1;
+    --ink-2: #B7B6C0;
+    --ink-3: #8F8E99;
+    --line: #2B2A32;
+    --line-strong: #3C3B45;
+    --link: #CCAFFC;
+    --entry: #B38DF0;
+    --entry-soft: #261C3A;
+    --seg-code: #8F55EF;
+    --seg-call: #CC62A3;
+    --seg-hash: #4A4952;
+    --on-fill: #111014;
+    --measured: #3FC1B3;
+    --estimate: #F0C263;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111014;
+  --bg-soft: #19181E;
+  --bg-sunk: #242329;
+  --ink: #EDEDF1;
+  --ink-2: #B7B6C0;
+  --ink-3: #8F8E99;
+  --line: #2B2A32;
+  --line-strong: #3C3B45;
+  --link: #CCAFFC;
+  --entry: #B38DF0;
+  --entry-soft: #261C3A;
+  --seg-code: #8F55EF;
+  --seg-call: #CC62A3;
+  --seg-hash: #4A4952;
+  --on-fill: #111014;
+  --measured: #3FC1B3;
+  --estimate: #F0C263;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.6 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 40px 56px;
+  display: grid;
+  gap: 48px;
+}
+section, header { display: grid; gap: 14px; }
+h1, h2 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 36px; line-height: 1.15; font-weight: 750; }
+h2 { font-size: 22px; line-height: 1.3; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--link); text-underline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.88em; }
+.meta { font-size: 14px; color: var(--ink-3); }
+.note { font-size: 14px; color: var(--ink-2); }
+:focus-visible { outline: 2px solid var(--entry); outline-offset: 2px; border-radius: 4px; }
+
+/* Setup diagram */
+.routes { display: grid; gap: 10px; }
+.lane { display: grid; grid-template-columns: 120px 1fr 24px 1fr 24px 1fr; align-items: stretch; }
+.lane-name { align-self: center; font-weight: 600; font-size: 15px; line-height: 1.3; padding-right: 10px; }
+.lane-name span { display: block; font-weight: 400; font-size: 13px; color: var(--ink-3); }
+.box { border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.4; background: var(--bg); }
+.box.entry { border: 2px solid var(--entry); background: var(--entry-soft); }
+.arrow { display: grid; place-items: center; color: var(--ink-3); }
+.arrow::before { content: "\2192"; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 13px; font-weight: 600; color: var(--ink-3); border-bottom-color: var(--line-strong); }
+td.r, th.r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.code { width: 36px; color: var(--ink-3); font-family: var(--mono); font-size: 13px; }
+tr.entry-row td { background: var(--entry-soft); }
+tr.total-row td { font-weight: 600; border-top: 1px solid var(--line-strong); }
+
+/* Explorer */
+.explorer { border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); padding: 18px; display: grid; gap: 18px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.presets button {
+  font: 500 14px/1.2 var(--sans); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line-strong); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+.presets button[aria-pressed="true"] { background: var(--seg-code); border-color: var(--seg-code); color: var(--on-fill); }
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.control { display: grid; gap: 4px; }
+.control label { font-weight: 600; font-size: 15px; }
+.control .value { font: 500 14px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
+.control .hint { font-size: 13px; color: var(--ink-3); }
+input[type="range"] { width: 100%; accent-color: var(--seg-code); margin: 0; }
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 70px 1fr 110px; gap: 10px; align-items: center; font-size: 14px; }
+.bar-row .total { font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--ink-2); }
+.track { height: 26px; background: var(--bg-sunk); border-radius: 4px; overflow: hidden; }
+.stack { display: flex; height: 100%; }
+.seg { height: 100%; min-width: 3px; flex: none; border-right: 2px solid var(--bg-sunk); transition: width 160ms ease; }
+.seg:last-child { border-right: 0; }
+.seg-hash { background: var(--seg-hash); }
+.seg-call { background: var(--seg-call); }
+.seg-code { background: var(--seg-code); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.result b { font-size: 24px; font-variant-numeric: tabular-nums; }
+.status { font-size: 14px; }
+.status.measured { color: var(--measured); }
+.status.estimate { color: var(--estimate); }
+
+ol.plain { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 68ch; }
+footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--ink-3); display: grid; gap: 6px; }
+
+@media (max-width: 720px) {
+  .page { padding-inline: 16px; padding-block: 28px 44px; gap: 40px; }
+  h1 { font-size: 30px; }
+  .lane { grid-template-columns: 1fr; gap: 4px; }
+  .lane-name { padding: 6px 0 2px; }
+  .arrow { height: 16px; }
+  .arrow::before { content: "\2193"; }
+  .controls { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: 56px 1fr; }
+  .bar-row .total { grid-column: 2; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { .seg { transition: none; } }
+</style>
+
+<main class="page">
+
+<header>
+  <div class="meta">Draft · EIP-8288 · 28 September 2026</div>
+  <h1>EVM Spend Challenge</h1>
+  <p>A private transfer in the minimal shielded pool comes with a zero-knowledge proof that a program checked the spend. This challenge measures how much that proof costs when the program is EVM bytecode run by an interpreter, compared with the same program compiled directly to RISC-V.</p>
+  <p>Entrants submit the EVM bytecode. The score is the number of RISC-V cycles it takes on a fixed version of leanVM. The result informs EIP-8288: if the EVM version costs close to the RISC-V version, applications could keep writing these programs in EVM bytecode, which weakens the performance case for letting them use RISC-V directly.</p>
+</header>
+
+<section aria-labelledby="setup">
+  <h2 id="setup">Setup</h2>
+  <div class="routes">
+    <div class="lane">
+      <div class="lane-name">RISC-V<span>reference</span></div>
+      <div class="box">Program in Rust</div>
+      <div class="arrow" aria-hidden="true"></div>
+      <div class="box">Compiled to RV64IM</div>
+      <div class="arrow" aria-hidden="true"></div>
+      <div class="box">Run and proved by leanVM</div>
+    </div>
+    <div class="lane">
+      <div class="lane-name">EVM<span>entry</span></div>
+      <div class="box entry">Program as EVM bytecode</div>
+      <div class="arrow" aria-hidden="true"></div>
+      <div class="box">Run by the REVM interpreter, compiled to RV64IM</div>
+      <div class="arrow" aria-hidden="true"></div>
+      <div class="box">Run and proved by leanVM</div>
+    </div>
+  </div>
+  <p>SHA-256 is the only hash. The EVM version calls the existing SHA-256 precompile at <code>0x02</code>, which is computed with the same code as in the Rust version, and it cannot call anything else. An entry changes only its bytecode; the interpreter, leanVM version and SHA-256 code are fixed.</p>
+</section>
+
+<section aria-labelledby="results">
+  <h2 id="results">Results so far</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Proof time</th></tr></thead>
+      <tbody>
+        <tr><td>RISC-V reference (Rust)</td><td class="r">460,471</td><td class="r">1.00×</td><td class="r">0.60 s</td></tr>
+        <tr class="entry-row"><td>EVM entry: Solidity baseline</td><td class="r">1,225,610</td><td class="r">2.66×</td><td class="r">1.67 s</td></tr>
+        <tr class="entry-row"><td>EVM entry: optimized Yul</td><td class="r">625,721</td><td class="r">1.36×</td><td class="r">1.01 s</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Cycles are the largest count over the valid test cases. Proof times are medians of six leanVM proofs of one spend, on an Apple M5 Max on AC power, without zero knowledge. Times vary between runs: across three runs, the Solidity baseline took 2.7 to 3.1 times the reference's proof time and the Yul entry 1.5 to 1.8 times.</p>
+  <p>Both entries spend the same cycles as the reference on SHA-256, plus about 108,000 cycles for the interpreter to make the 55 precompile calls. What separates them is the EVM bytecode outside the calls:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th class="r">Solidity baseline</th><th class="r">Optimized Yul</th></tr></thead>
+      <tbody>
+        <tr><td>SHA-256, 105 compressions</td><td class="r">447,399</td><td class="r">447,399</td></tr>
+        <tr><td>The 55 precompile calls themselves</td><td class="r">108,125</td><td class="r">108,125</td></tr>
+        <tr><td>EVM bytecode outside the calls</td><td class="r">663,651</td><td class="r">63,762</td></tr>
+        <tr><td>Start-up</td><td class="r">6,435</td><td class="r">6,435</td></tr>
+        <tr class="total-row"><td>Total</td><td class="r">1,225,610</td><td class="r">625,721</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The Solidity baseline executes 8,684 EVM instructions per spend, mostly code the compiler generates around each hash: moving values on the stack, computing and bounds-checking input offsets, and jumps. The Yul entry executes 1,348. It reuses one message buffer, has each precompile call write its result where the next hash reads it, has no loops, never branches on private data, and checks all rules once at the end. It skips checking each call's result, because under the fixed gas limit a SHA-256 call cannot fail.</p>
+</section>
+
+<section aria-labelledby="explore">
+  <h2 id="explore">How the gap can change</h2>
+  <p>Entries cut the EVM bytecode outside the calls. A zkVM accelerator for SHA-256 would cut the hashing cycles of both versions by the same amount, which lowers both totals but raises the ratio.</p>
+  <div class="explorer">
+    <div class="presets" role="group" aria-label="Scenarios">
+      <button type="button" data-o="12066" data-c="4261">Solidity baseline (measured)</button>
+      <button type="button" data-o="1159" data-c="4261">Optimized Yul (measured)</button>
+      <button type="button" data-o="1159" data-c="200">Yul with SHA-256 at 200 cycles per compression (estimate)</button>
+    </div>
+    <div class="controls">
+      <div class="control">
+        <label for="overhead">EVM bytecode outside the calls, average per call</label>
+        <input type="range" id="overhead" min="0" max="12066" step="1" value="12066">
+        <div class="value" id="overhead-value">12,066 cycles</div>
+        <div class="hint">Solidity baseline: 12,066. Optimized Yul: 1,159.</div>
+      </div>
+      <div class="control">
+        <label for="hashcost">SHA-256 cycles per compression</label>
+        <input type="range" id="hashcost" min="0" max="4261" step="1" value="4261">
+        <div class="value" id="hashcost-value">4,261 cycles</div>
+        <div class="hint">Software SHA-256 today: 4,261. Each spend needs 105 compressions.</div>
+      </div>
+    </div>
+    <div class="bars" aria-hidden="true">
+      <div class="bar-row">
+        <span>RISC-V</span>
+        <div class="track"><div class="stack">
+          <div class="seg seg-hash" id="n-hash"></div>
+          <div class="seg seg-code" id="n-other"></div>
+        </div></div>
+        <span class="total" id="native-total"></span>
+      </div>
+      <div class="bar-row">
+        <span>EVM</span>
+        <div class="track"><div class="stack">
+          <div class="seg seg-hash" id="e-hash"></div>
+          <div class="seg seg-call" id="e-call"></div>
+          <div class="seg seg-code" id="e-other"></div>
+        </div></div>
+        <span class="total" id="evm-total"></span>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background: var(--seg-hash)"></i>SHA-256</span>
+      <span><i style="background: var(--seg-call)"></i>The precompile calls themselves</span>
+      <span><i style="background: var(--seg-code)"></i>Everything else</span>
+    </div>
+    <div class="result" aria-live="polite">
+      <b id="ratio">2.66×</b><span>EVM cycles over RISC-V cycles</span>
+      <b id="extra">765,139</b><span>extra EVM cycles</span>
+      <span class="status measured" id="status">Measured</span>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="statement">
+  <h2 id="statement">What the program checks</h2>
+  <p>The rules are those of the minimal shielded pool's current spend: two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee. Each output note is an amount plus the <code>inner</code> value its recipient provides. This version uses SHA-256 instead of Poseidon, fixed-width byte fields instead of field elements, and a one-byte tag at the start of every hashed message.</p>
+  <p>The input is 1,680 bytes, and the program makes 55 SHA-256 calls, 40 of them for the two Merkle paths. For a valid input it returns the 32-byte SHA-256 digest of the public values: both nullifiers, both output commitments, the root, domain, public amount, fee, recipient and authorizer. For an input that breaks any of these rules, it must return nothing:</p>
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><td class="code">0</td><td>The input is exactly 1,680 bytes.</td></tr>
+        <tr><td class="code">1</td><td>Each input note's leaf index is below 2<sup>20</sup>.</td></tr>
+        <tr><td class="code">2</td><td>For each input note with nonzero value, the Merkle path from its commitment leads to the root.</td></tr>
+        <tr><td class="code">3</td><td>The two input values do not sum to zero.</td></tr>
+        <tr><td class="code">4</td><td>The input values sum to the output values plus the public amount plus the fee, computed without wraparound.</td></tr>
+        <tr><td class="code">5</td><td>An output with value zero has <code>inner</code> equal to 1 if it is the first output and 2 if it is the second.</td></tr>
+        <tr><td class="code">6</td><td>An output with nonzero value has <code>inner</code> other than 1 and 2.</td></tr>
+        <tr><td class="code">7</td><td>The authorizer address is not zero.</td></tr>
+        <tr><td class="code">8</td><td>The recipient address is zero exactly when the public amount is zero.</td></tr>
+        <tr><td class="code">9</td><td>The two nullifiers differ.</td></tr>
+        <tr><td class="code">10</td><td>The two output commitments differ.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">The <a href="https://github.com/soispoke/evm-spend-challenge/blob/main/SPEC.md">specification</a> gives the exact input layout and hash definitions.</p>
+</section>
+
+<section aria-labelledby="scoring">
+  <h2 id="scoring">Scoring</h2>
+  <ol class="plain">
+    <li>The entry returns the expected digest for each of the 20 valid public test cases and returns nothing for each of the 39 invalid ones.</li>
+    <li>It does the same on new test cases generated from fresh random seeds at scoring time.</li>
+    <li>Every valid case is run on the fixed version of leanVM. The padded trace size must be the same for all valid inputs, because the proof reveals it.</li>
+    <li>The score is the largest cycle count over the valid cases. Lower is better.</li>
+  </ol>
+  <p>The invalid test cases cover every rule: removing any one rule check from either entry makes a test fail. Entries are EVM bytecode, so other RISC-V zkVMs can prove both versions on the same machine to compare proof times, but the score comes only from the fixed leanVM version. Final timings should use zero knowledge, which Jolt supports and this leanVM version does not.</p>
+</section>
+
+<section aria-labelledby="open">
+  <h2 id="open">Still to decide</h2>
+  <p>What counts as close enough (proof time and peak memory with zero knowledge on a named laptop), how the hidden test seeds are chosen, and whether other zkVMs count toward the score.</p>
+</section>
+
+<footer>
+  <div>Specification, results and code: <a href="https://github.com/soispoke/evm-spend-challenge">github.com/soispoke/evm-spend-challenge</a>. Research code, not audited.</div>
+</footer>
+
+</main>
+
+<script>
+(() => {
+  // Measured components, in leanVM RV64IM cycles.
+  const HASH = 447399;         // SHA-256, 105 compressions, the same in both versions
+  const CALLS = 108125;        // the 55 precompile calls themselves, excluding hashing
+  const EVM_START = 6435;      // EVM start-up
+  const CODE = { 12066: 663651, 1159: 63762 };   // measured bytecode outside the calls
+  const NATIVE_OTHER = 13072;  // RISC-V version outside hashing
+  const C_MAX = 4261;
+  const SCALE = HASH + CALLS + EVM_START + CODE[12066];   // 1,225,610, the Solidity baseline
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString("en-US");
+  const overhead = $("overhead"), hashcost = $("hashcost");
+  const buttons = Array.from(document.querySelectorAll(".presets button"));
+  const width = (el, v) => { el.style.width = (100 * v / SCALE) + "%"; el.hidden = v === 0; };
+
+  function render() {
+    const o = Number(overhead.value), c = Number(hashcost.value);
+    const hash = c === C_MAX ? HASH : 105 * c;
+    const code = o in CODE ? CODE[o] : 55 * o;
+    const native = hash + NATIVE_OTHER;
+    const evm = hash + CALLS + EVM_START + code;
+    width($("n-hash"), hash);
+    width($("n-other"), NATIVE_OTHER);
+    width($("e-hash"), hash);
+    width($("e-call"), CALLS);
+    width($("e-other"), EVM_START + code);
+    $("native-total").textContent = fmt(native);
+    $("evm-total").textContent = fmt(evm);
+    $("overhead-value").textContent = fmt(o) + " cycles";
+    $("hashcost-value").textContent = fmt(c) + " cycles";
+    $("ratio").textContent = (evm / native).toFixed(2) + "×";
+    $("extra").textContent = fmt(evm - native);
+    const measured = c === C_MAX && o in CODE;
+    const status = $("status");
+    status.className = "status " + (measured ? "measured" : "estimate");
+    status.textContent = measured ? "Measured" : "Estimate from the measured numbers";
+    buttons.forEach((b) => b.setAttribute("aria-pressed",
+      String(Number(b.dataset.o) === o && Number(b.dataset.c) === c)));
+  }
+
+  buttons.forEach((b) => b.addEventListener("click", () => {
+    overhead.value = b.dataset.o;
+    hashcost.value = b.dataset.c;
+    render();
+  }));
+  overhead.addEventListener("input", render);
+  hashcost.addEventListener("input", render);
+  render();
+})();
+</script>

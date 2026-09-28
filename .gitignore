@@ -1,0 +1,7 @@
+/vendor/
+target/
+guests/target/
+evm/out/
+evm/cache/
+__pycache__/
+guests/evm/bytecode.bin

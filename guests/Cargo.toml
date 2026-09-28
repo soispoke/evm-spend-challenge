@@ -1,0 +1,13 @@
+[workspace]
+members = ["runtime", "native", "evm", "control"]
+resolver = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[patch.crates-io]
+revm-bytecode = { path = "../engine/vendor/revm-bytecode-43.0.0" }
+revm-database-interface = { path = "../engine/vendor/revm-database-interface-43.0.0" }
+revm-context-interface = { path = "../engine/vendor/revm-context-interface-43.0.1" }

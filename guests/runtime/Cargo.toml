@@ -1,0 +1,9 @@
+[package]
+name = "spend-runtime"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+leanvm-guest = { path = "../../vendor/leanVM/guests/rt" }
+portable-atomic = { version = "1", default-features = false, features = ["critical-section"] }
+critical-section = { version = "1", default-features = false }

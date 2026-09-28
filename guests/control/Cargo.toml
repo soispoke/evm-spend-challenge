@@ -1,0 +1,16 @@
+[package]
+name = "spend-control-guests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spend-runtime = { path = "../runtime" }
+spend-sha256 = { path = "../../statement" }
+
+[[bin]]
+name = "spend-hash-control"
+path = "src/hash.rs"
+
+[[bin]]
+name = "spend-null-control"
+path = "src/null.rs"

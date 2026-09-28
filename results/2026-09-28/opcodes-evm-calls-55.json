@@ -1,0 +1,1 @@
+{"case":"transfer","gas_used":12270,"instructions":616,"opcodes":[["PUSH1",277],["PUSH0",113],["POP",55],["MSTORE8",55],["GAS",55],["STATICCALL",55],["PUSH2",3],["CALLDATACOPY",2],["RETURN",1]],"output":"0x5cb81b91162630c55eb07a8ad50392fcb43705cc8eec3d2d166c35944c22ab88","peak_memory_bytes":288,"result":"Return"}

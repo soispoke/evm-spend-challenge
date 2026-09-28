@@ -1,0 +1,17 @@
+[package]
+name = "spend-evm-engine"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+revm-interpreter = { version = "=43.0.0", default-features = false, features = ["memory_limit"] }
+sha2 = { version = "=0.10.9", default-features = false }
+
+# RV64IM has no atomic instructions. These features use the guest's explicitly
+# single-hart/no-interrupt critical section instead of generating A or CSR ops.
+[target.'cfg(all(target_arch = "riscv64", target_os = "none"))'.dependencies]
+bytes = { version = "=1.12.1", default-features = false, features = ["extra-platforms"] }
+once_cell = { version = "=1.21.3", default-features = false, features = ["alloc", "race", "portable-atomic"] }
+portable-atomic = { version = "1", default-features = false, features = ["critical-section"] }
+critical-section = { version = "1", default-features = false }

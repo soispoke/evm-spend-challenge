@@ -1,0 +1,1 @@
+{"case":"transfer","gas_used":85,"instructions":11,"opcodes":[["PUSH1",4],["CALLDATACOPY",2],["PUSH0",2],["PUSH2",2],["RETURN",1]],"output":"0x7b5f2af72eada011eb5c18656f25587896d82e5c254144d76a7002d1ecb6d6ca","peak_memory_bytes":288,"result":"Return"}

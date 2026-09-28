@@ -1,0 +1,14 @@
+[workspace]
+members = ["statement", "engine", "host"]
+exclude = ["guests", "vendor"]
+resolver = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+# REVM portability patches for RV64IM; see engine/vendor/PORTABILITY.md.
+[patch.crates-io]
+revm-bytecode = { path = "engine/vendor/revm-bytecode-43.0.0" }
+revm-database-interface = { path = "engine/vendor/revm-database-interface-43.0.0" }
+revm-context-interface = { path = "engine/vendor/revm-context-interface-43.0.1" }

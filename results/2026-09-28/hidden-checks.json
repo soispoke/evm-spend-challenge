@@ -1,0 +1,56 @@
+[
+ {
+  "seed": 1,
+  "entry": "solidity",
+  "cases": 79,
+  "evm_checked": true,
+  "failures": [],
+  "invalid": 39,
+  "valid": 40
+ },
+ {
+  "seed": 1,
+  "entry": "yul",
+  "cases": 79,
+  "evm_checked": true,
+  "failures": [],
+  "invalid": 39,
+  "valid": 40
+ },
+ {
+  "seed": 2,
+  "entry": "solidity",
+  "cases": 79,
+  "evm_checked": true,
+  "failures": [],
+  "invalid": 39,
+  "valid": 40
+ },
+ {
+  "seed": 2,
+  "entry": "yul",
+  "cases": 79,
+  "evm_checked": true,
+  "failures": [],
+  "invalid": 39,
+  "valid": 40
+ },
+ {
+  "seed": 3,
+  "entry": "solidity",
+  "cases": 79,
+  "evm_checked": true,
+  "failures": [],
+  "invalid": 39,
+  "valid": 40
+ },
+ {
+  "seed": 3,
+  "entry": "yul",
+  "cases": 79,
+  "evm_checked": true,
+  "failures": [],
+  "invalid": 39,
+  "valid": 40
+ }
+]

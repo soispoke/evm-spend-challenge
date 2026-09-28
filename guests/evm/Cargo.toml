@@ -1,0 +1,12 @@
+[package]
+name = "spend-evm-guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spend-runtime = { path = "../runtime" }
+spend-evm-engine = { path = "../../engine" }
+
+[[bin]]
+name = "spend-evm"
+path = "src/main.rs"

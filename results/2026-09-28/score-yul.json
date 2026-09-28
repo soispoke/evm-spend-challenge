@@ -1,0 +1,41 @@
+{
+ "accepted": true,
+ "score_cycles": 625721,
+ "min_cycles": 625697,
+ "valid_cases_executed": 68,
+ "padded_cycles": [
+  983496
+ ],
+ "witness_log_size": [
+  26
+ ],
+ "provable_at_pinned_size_bound": true,
+ "bytecode_bytes": 1789,
+ "hidden_seeds": [
+  303,
+  404
+ ],
+ "gate": [
+  {
+   "cases": 59,
+   "evm_checked": true,
+   "failures": [],
+   "invalid": 39,
+   "valid": 20
+  },
+  {
+   "cases": 63,
+   "evm_checked": true,
+   "failures": [],
+   "invalid": 39,
+   "valid": 24
+  },
+  {
+   "cases": 63,
+   "evm_checked": true,
+   "failures": [],
+   "invalid": 39,
+   "valid": 24
+  }
+ ]
+}

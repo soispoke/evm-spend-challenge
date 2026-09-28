@@ -1,0 +1,23 @@
+[package]
+name = "spend-challenge"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+leanvm = { path = "../vendor/leanVM" }
+lean_vm = { path = "../vendor/leanVM/crates/lean_vm" }
+parallel = { path = "../vendor/leanVM/crates/parallel" }
+primitives = { path = "../vendor/leanVM/crates/primitives" }
+bincode = "1"
+serde_json = "1"
+spend-sha256 = { path = "../statement" }
+spend-evm-engine = { path = "../engine" }
+
+[dev-dependencies]
+revm-interpreter = { version = "=43.0.0", default-features = false, features = ["memory_limit"] }
+sha2 = { version = "=0.10.9", default-features = false }
+
+[[bin]]
+name = "spend-challenge"
+path = "src/main.rs"
