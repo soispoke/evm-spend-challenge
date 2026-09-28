@@ -1,5 +1,5 @@
 [workspace]
-members = ["runtime", "native", "evm", "control"]
+members = ["runtime", "native", "evm", "control", "evm-variants", "hash-choice", "blake2s-edition"]
 resolver = "2"
 
 [profile.release]

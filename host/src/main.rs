@@ -61,6 +61,9 @@ fn expected(route: &str, case: &Value) -> Option<[u8; 32]> {
 fn check(args: &Args) -> ExitCode {
     let (cases, rules) = load_cases(&args.required("--fixtures"));
     let bytecode = args.value("--evm").map(|path| unhex(&fs::read_to_string(path).unwrap()));
+    // `--hash blake2s` checks the BLAKE2s edition: the Rust statement with BLAKE2s,
+    // and EVM candidates under REVM with a BLAKE2s precompile at 0xb2.
+    let blake2s = args.value("--hash").as_deref() == Some("blake2s");
     let mut failures = Vec::new();
     for case in &cases {
         let name = case["name"].as_str().unwrap();
@@ -68,7 +71,11 @@ fn check(args: &Args) -> ExitCode {
         let valid = case["valid"].as_bool().unwrap();
         let want = valid.then(|| unhex(case["digest"].as_str().unwrap()));
         let rule = case["rule"].as_str();
-        let native = spend_sha256::verify(&input);
+        let native = if blake2s {
+            spend_sha256::verify_with::<spend_sha256::Blake2sHash>(&input)
+        } else {
+            spend_sha256::verify(&input)
+        };
         let native_ok = match (&want, native) {
             (Some(digest), Ok(got)) => got.as_slice() == digest.as_slice(),
             (None, Err(got)) => Some(got.name()) == rule,
@@ -78,7 +85,12 @@ fn check(args: &Args) -> ExitCode {
             failures.push(json!({"case": name, "route": "native", "result": format!("{native:?}")}));
         }
         if let Some(code) = &bytecode {
-            let evm = spend_evm_engine::execute(code, &input);
+            let evm = if blake2s {
+                use spend_evm_interpreters::{Blake2sPrecompile, GAS_LIMIT, reference};
+                reference::run_with::<Blake2sPrecompile>(code, &input, GAS_LIMIT).result
+            } else {
+                spend_evm_engine::execute(code, &input)
+            };
             let evm_ok = match (&want, &evm) {
                 (Some(digest), Ok(got)) => got == digest,
                 // A rejected case must not return output. When the candidate
@@ -157,6 +169,7 @@ fn execute(args: &Args) -> ExitCode {
             let (_, shape) = lean_vm::witness::placements_of(&kappas);
             let padded_cycles: usize = filled.iter().sum();
             record["padded_cycles"] = json!(padded_cycles);
+            record["padded_counts"] = json!(filled);
             record["committed_words"] = json!(shape.committed_len());
             record["witness_log_size"] = json!(shape.mu);
             record["base_counts"] = json!(base_counts);
@@ -186,7 +199,12 @@ fn prove_case(args: &Args) -> ExitCode {
     let (cases, _) = load_cases(&args.required("--fixtures"));
     let name = args.required("--case");
     let case = cases.iter().find(|c| c["name"] == name.as_str()).expect("case");
-    let public = digest_words(&expected(&route, case).expect("a provable case"));
+    // `--public HEX` proves a guest whose output no route computes, such as the
+    // hash comparisons in guests/hash-choice.
+    let public = match args.value("--public") {
+        Some(hex) => digest_words(&unhex(&hex).try_into().expect("32 bytes")),
+        None => digest_words(&expected(&route, case).expect("a provable case")),
+    };
     let advice = words(&unhex(case["input"].as_str().unwrap()));
     let warmups: usize = args.value("--warmups").map_or(1, |v| v.parse().unwrap());
     let repetitions: usize = args.value("--repetitions").map_or(3, |v| v.parse().unwrap());

@@ -1,0 +1,10 @@
+[package]
+name = "spend-blake2s-edition-guests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spend-runtime = { path = "../runtime" }
+spend-sha256 = { path = "../../statement" }
+spend-evm-interpreters = { path = "../../interpreters" }
+leanvm-guest = { path = "../../vendor/leanVM/guests/rt" }

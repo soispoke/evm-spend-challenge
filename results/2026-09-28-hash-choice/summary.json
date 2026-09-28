@@ -1,0 +1,34 @@
+{
+ "case": "transfer",
+ "messages": 55,
+ "blocks_of_64_bytes": 105,
+ "outputs_checked": true,
+ "sha256-software": {
+  "cycles": 448239,
+  "padded_cycles": 622744,
+  "committed_words": 26861208,
+  "median_proof_s": 0.383,
+  "timed_proofs": 4
+ },
+ "blake2s-software": {
+  "cycles": 337159,
+  "padded_cycles": 491552,
+  "committed_words": 21727184,
+  "median_proof_s": 0.379,
+  "timed_proofs": 4
+ },
+ "blake3-software": {
+  "cycles": 238304,
+  "padded_cycles": 278560,
+  "committed_words": 12945360,
+  "median_proof_s": 0.186,
+  "timed_proofs": 4
+ },
+ "blake2s-instruction": {
+  "cycles": 39748,
+  "padded_cycles": 51472,
+  "committed_words": 3460592,
+  "median_proof_s": 0.061,
+  "timed_proofs": 4
+ }
+}

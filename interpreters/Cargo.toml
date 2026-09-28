@@ -1,0 +1,11 @@
+[package]
+name = "spend-evm-interpreters"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+revm-interpreter = { version = "=43.0.0", default-features = false, features = ["memory_limit"] }
+sha2 = { version = "=0.10.9", default-features = false }
+spend-evm-engine = { path = "../engine" }
+spend-sha256 = { path = "../statement" }

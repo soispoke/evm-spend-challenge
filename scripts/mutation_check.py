@@ -6,9 +6,10 @@ run the scorer's correctness check. Every such mutant must fail at least one
 public case.
 
   solidity: removes the baseline's `revert Rule(n)`, recompiled with Foundry
-  yul:      regenerates the optimized entry with `generate.py --drop RULE`
+  yul:      regenerates the Yul entry with `evm/yul/generate.py --drop RULE`
+  bytecode: regenerates the bytecode entry with `evm/bytecode/generate.py --drop RULE`
 
-Usage: python3 scripts/mutation_check.py solidity|yul OUT.json
+Usage: python3 scripts/mutation_check.py solidity|yul|bytecode OUT.json
 """
 import json
 import re
@@ -35,15 +36,18 @@ def solidity_mutant(code: int, rule: str, work: Path) -> str:
     return artifact["deployedBytecode"]["object"].removeprefix("0x")
 
 
-def yul_mutant(code: int, rule: str, work: Path) -> str:
-    run = subprocess.run([sys.executable, str(ROOT / "evm/yul/generate.py"), "--drop", rule],
-                         capture_output=True, text=True, check=True)
-    return run.stdout.strip()
+def generated_mutant(generator: str):
+    def build(code: int, rule: str, work: Path) -> str:
+        run = subprocess.run([sys.executable, str(ROOT / generator), "--drop", rule],
+                             capture_output=True, text=True, check=True)
+        return run.stdout.strip()
+    return build
 
 
 def main() -> int:
     entry, out = sys.argv[1], Path(sys.argv[2])
-    build = {"solidity": solidity_mutant, "yul": yul_mutant}[entry]
+    build = {"solidity": solidity_mutant, "yul": generated_mutant("evm/yul/generate.py"),
+             "bytecode": generated_mutant("evm/bytecode/generate.py")}[entry]
     rules = json.loads(FIXTURES.read_text())["rules"]
     results = []
     for code, rule in enumerate(rules):

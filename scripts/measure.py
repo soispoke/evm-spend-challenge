@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run every deterministic measurement into one directory.
 
-For the RISC-V reference, both EVM entries and the four control programs:
+For the RISC-V reference, the three EVM entries and the four control programs:
 leanVM cycle counts on the public cases, the full scorer with fixed hidden
 seeds, extra hidden checks, EVM instruction profiles, and the rule-removal
 check. Proof timing is separate (scripts/time_proofs.py). Run
@@ -21,7 +21,7 @@ SCORER = ROOT / "target/release/spend-challenge"
 PROFILE = ROOT / "target/release/examples/opcode_profile"
 ELF = ROOT / "guests/target/riscv64im-unknown-none-elf/release"
 FIXTURES = ROOT / "fixtures/public.json"
-ENTRIES = {"solidity": "evm/baseline.hex", "yul": "evm/yul/bytecode.hex"}
+ENTRIES = {"solidity": "evm/baseline.hex", "yul": "evm/yul/bytecode.hex", "bytecode": "evm/bytecode/bytecode.hex"}
 CONTROLS = {"evm-calls-55": "evm/controls/calls-55.hex", "evm-calls-0": "evm/controls/calls-0.hex"}
 HOST = subprocess.run(["rustc", "-vV"], capture_output=True, text=True).stdout.split("host: ")[1].split()[0]
 TOOLCHAIN = Path(os.environ.get("RUSTUP_HOME", Path.home() / ".rustup")) / "toolchains" / f"nightly-2026-09-17-{HOST}"
@@ -62,7 +62,7 @@ def main() -> int:
         run([SCORER, "execute", "--route", route, "--elf", ELF / "spend-evm", "--fixtures", FIXTURES],
             out / f"execute-{name}.jsonl")
     # Full scorer with fixed hidden seeds.
-    for name, seeds in (("solidity", ["101", "202"]), ("yul", ["303", "404"])):
+    for name, seeds in (("solidity", ["101", "202"]), ("yul", ["303", "404"]), ("bytecode", ["505", "606"])):
         run([sys.executable, ROOT / "scripts/score.py", ROOT / ENTRIES[name], "--hidden-seeds", *seeds,
              "--out", out / f"score-{name}.json"])
     build_evm_guest(ENTRIES["solidity"])

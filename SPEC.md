@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cycles. Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules; under EIP-8288 those rules could be a program proved by a zkVM. This challenge measures that program's cost when it is EVM bytecode run by an interpreter, against the same program compiled directly to RISC-V, on a fixed version of leanVM. The Solidity baseline takes 1,225,610 cycles, 2.66 times the RISC-V reference, and an optimized Yul entry takes 625,721, 1.36 times. The result informs whether applications under EIP-8288 can keep their proved programs in EVM bytecode or should be able to use RISC-V directly.
+Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cycles. Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules; under EIP-8288 those rules could be a program proved by a zkVM. This challenge measures that program's cost when it is EVM bytecode run by an interpreter, against the same program compiled directly to RISC-V, on a fixed version of leanVM. The Solidity baseline takes 1,225,610 cycles, 2.66 times the RISC-V reference, an optimized Yul entry takes 625,721 (1.36 times) and a hand-written bytecode entry 615,971 (1.34 times). Most of what remains is the fixed interpreter's cost: run by an interpreter written for proving, the hand-written entry takes 1.10 times, and compiled ahead of time 1.00 times. The result informs whether applications under EIP-8288 can keep their proved programs in EVM bytecode or should be able to use RISC-V directly.
 
 ## The question
 
@@ -83,7 +83,7 @@ An entry is scored only if it passes both sets of tests:
 1. The 59 [public test cases](fixtures/public.json): it returns the expected digest for each of the 20 valid inputs and does not return for any of the 39 invalid inputs, each of which breaks exactly one rule.
 2. New test cases generated from fresh random seeds at scoring time: random valid spends and a regenerated set of invalid inputs.
 
-The invalid cases cover every rule: removing any one rule check from the Solidity baseline or the Yul entry makes at least one public case fail.
+The invalid cases cover every rule: removing any one rule check from any of the three entries makes at least one public case fail.
 
 ### Score
 
@@ -93,20 +93,21 @@ The score is the largest RV64IM cycle count over all valid test cases, as counte
 
 An entry changes only its bytecode. The rest is fixed:
 
-- **Interpreter:** `revm-interpreter` 43.0.0 with Cancun rules, a 30 million gas limit and a 1 MiB memory limit, patched only to build for RV64IM ([patches](engine/vendor/README.md)).
+- **Interpreter:** `revm-interpreter` 43.0.0 with Cancun rules, a 30 million gas limit and a 1 MiB memory limit, patched only to build for RV64IM ([patches](engine/vendor/README.md)). It is fixed so that entries compete on their bytecode; faster interpreters are measured separately in [RESULTS.md](RESULTS.md#faster-interpreters) and do not change the score.
 - **External calls:** only `STATICCALL` to the SHA-256 precompile at `0x02`, charged mainnet gas (60 plus 12 per 32-byte word) and computed with the same `sha2` 0.10.9 code as the RISC-V reference. Storage, logs, environment reads, value transfers and contract creation are rejected.
 - **Machine:** leanVM, `riscv-exploration` branch at [`1096dedf`](https://github.com/leanEthereum/leanVM/tree/1096dedfbe29c72cfff2a2d8d8b420e6ff0d9f2d), RV64IM, with the [guest runtime](guests/runtime/src/lib.rs) and Rust `nightly-2026-09-17`.
 - **Hashing:** software only on both sides, with no zkVM accelerator or custom instruction.
 
 ## Reference results
 
-| Program | Cycles | vs RISC-V |
-|---|---:|---:|
-| RISC-V reference (Rust) | 460,471 | 1.00 |
-| [Solidity baseline](evm/src/SpendSha256.sol) | 1,225,610 | 2.66 |
-| [Optimized Yul entry](evm/yul/generate.py) | 625,721 | 1.36 |
+| Program | Cycles | vs RISC-V | Gas |
+|---|---:|---:|---:|
+| RISC-V reference (Rust) | 460,471 | 1.00 | |
+| [Solidity baseline](evm/src/SpendSha256.sol) | 1,225,610 | 2.66 | 41,075 |
+| [Optimized Yul entry](evm/yul/generate.py) | 625,721 | 1.36 | 14,658 |
+| [Hand-written bytecode entry](evm/bytecode/generate.py) | 615,971 | 1.34 | 14,559 |
 
-[RESULTS.md](RESULTS.md) has the full measurements: control programs, where the cycles go, instruction counts, proof times and estimates with faster SHA-256.
+Gas is reported for comparison with gas-scored challenges such as precompile.fast; it does not enter the score. [RESULTS.md](RESULTS.md) has the full measurements: control programs, where the cycles go, instruction counts, gas, proof times, estimates with faster SHA-256, and the same programs under faster interpreters.
 
 ## Provers and zero knowledge
 
@@ -119,4 +120,5 @@ No separate zero-knowledge EVM prover is needed: an EVM interpreter proved by a 
 - **Threshold:** what counts as close enough, stated as proof time and peak memory with zero knowledge on a named laptop.
 - **Hidden seeds:** how they are chosen after submission, for example from a later block hash.
 - **Other zkVMs:** whether they contribute to the score or only to timing.
+- **Interpreter round:** whether a second round lets entrants change the interpreter instead of the bytecode, with the parity and random-program tests against REVM in [RESULTS.md](RESULTS.md#checks) as the correctness gate, plus Ethereum's execution tests for any opcode those do not reach.
 - **Hosting:** where the challenge runs, for example [Yukon](https://www.yukon.org/create) like [precompile.fast](https://www.yukon.org/precompile), and any recognition for entrants.

@@ -5,3 +5,6 @@ evm/out/
 evm/cache/
 __pycache__/
 guests/evm/bytecode.bin
+guests/evm-variants/compiled_program.rs
+guests/blake2s-edition/bytecode.bin
+guests/blake2s-edition/compiled_program.rs

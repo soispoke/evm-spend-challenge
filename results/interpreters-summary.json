@@ -1,0 +1,477 @@
+{
+ "question": "How much of the EVM's extra proving cost is the interpreter?",
+ "reference_cycles": 460471,
+ "sha256_cycles": 447399,
+ "riscv_outside_sha256": 13072,
+ "cycles": {
+  "solidity": {
+   "revm": 1225610,
+   "revm-direct": 1202567,
+   "fast": 895279,
+   "compiled": 605936
+  },
+  "yul": {
+   "revm": 625721,
+   "revm-direct": 610912,
+   "fast": 520530,
+   "compiled": 483044
+  },
+  "bytecode": {
+   "revm": 615971,
+   "revm-direct": 597324,
+   "fast": 504922,
+   "compiled": 461359
+  },
+  "evm-calls-55": {
+   "revm": 561959,
+   "revm-direct": 547263,
+   "fast": 475219,
+   "compiled": 450599
+  },
+  "evm-calls-0": {
+   "revm": 6435,
+   "revm-direct": 6480,
+   "fast": 1725,
+   "compiled": 1069
+  }
+ },
+ "cycles_over_reference": {
+  "solidity": {
+   "revm": 2.662,
+   "revm-direct": 2.612,
+   "fast": 1.944,
+   "compiled": 1.316
+  },
+  "yul": {
+   "revm": 1.359,
+   "revm-direct": 1.327,
+   "fast": 1.13,
+   "compiled": 1.049
+  },
+  "bytecode": {
+   "revm": 1.338,
+   "revm-direct": 1.297,
+   "fast": 1.097,
+   "compiled": 1.002
+  },
+  "evm-calls-55": {
+   "revm": 1.22,
+   "revm-direct": 1.188,
+   "fast": 1.032,
+   "compiled": 0.979
+  },
+  "evm-calls-0": {
+   "revm": 0.014,
+   "revm-direct": 0.014,
+   "fast": 0.004,
+   "compiled": 0.002
+  }
+ },
+ "padded_cycles": {
+  "solidity": {
+   "revm": 1836808,
+   "revm-direct": 1836808,
+   "fast": 1049160,
+   "compiled": 918344
+  },
+  "yul": {
+   "revm": 983496,
+   "revm-direct": 983496,
+   "fast": 884896,
+   "compiled": 884896
+  },
+  "bytecode": {
+   "revm": 983496,
+   "revm-direct": 983496,
+   "fast": 884888,
+   "compiled": 884888
+  },
+  "evm-calls-55": {
+   "revm": 917712,
+   "revm-direct": 917712,
+   "fast": 884888,
+   "compiled": 622744
+  },
+  "evm-calls-0": {
+   "revm": 8352,
+   "revm-direct": 8480,
+   "fast": 2976,
+   "compiled": 1632
+  }
+ },
+ "gas_used": {
+  "solidity": 41075,
+  "yul": 14658,
+  "bytecode": 14559,
+  "evm-calls-55": 12270,
+  "evm-calls-0": 85
+ },
+ "cycles_per_gas": {
+  "solidity": {
+   "revm": 29.8,
+   "revm-direct": 29.3,
+   "fast": 21.8,
+   "compiled": 14.8
+  },
+  "yul": {
+   "revm": 42.7,
+   "revm-direct": 41.7,
+   "fast": 35.5,
+   "compiled": 33.0
+  },
+  "bytecode": {
+   "revm": 42.3,
+   "revm-direct": 41.0,
+   "fast": 34.7,
+   "compiled": 31.7
+  }
+ },
+ "breakdown": {
+  "revm": {
+   "start_up": 6435,
+   "precompile_calls": 108125,
+   "precompile_calls_per_call": 1965.9,
+   "bytecode_outside_calls": {
+    "solidity": 663651,
+    "yul": 63762,
+    "bytecode": 54012
+   },
+   "extra_over_reference": {
+    "solidity": 765139,
+    "yul": 165250,
+    "bytecode": 155500
+   }
+  },
+  "revm-direct": {
+   "start_up": 6480,
+   "precompile_calls": 93384,
+   "precompile_calls_per_call": 1697.9,
+   "bytecode_outside_calls": {
+    "solidity": 655304,
+    "yul": 63649,
+    "bytecode": 50061
+   },
+   "extra_over_reference": {
+    "solidity": 742096,
+    "yul": 150441,
+    "bytecode": 136853
+   }
+  },
+  "fast": {
+   "start_up": 1725,
+   "precompile_calls": 26095,
+   "precompile_calls_per_call": 474.5,
+   "bytecode_outside_calls": {
+    "solidity": 420060,
+    "yul": 45311,
+    "bytecode": 29703
+   },
+   "extra_over_reference": {
+    "solidity": 434808,
+    "yul": 60059,
+    "bytecode": 44451
+   }
+  },
+  "compiled": {
+   "start_up": 1069,
+   "precompile_calls": 2131,
+   "precompile_calls_per_call": 38.7,
+   "bytecode_outside_calls": {
+    "solidity": 155337,
+    "yul": 32445,
+    "bytecode": 10760
+   },
+   "extra_over_reference": {
+    "solidity": 145465,
+    "yul": 22573,
+    "bytecode": 888
+   }
+  }
+ },
+ "estimates_faster_sha256": [
+  {
+   "cycles_per_compression": 200,
+   "riscv": 34072,
+   "solidity_revm": 799211,
+   "solidity_revm_over_riscv": 23.46,
+   "solidity_revm-direct": 776168,
+   "solidity_revm-direct_over_riscv": 22.78,
+   "solidity_fast": 468880,
+   "solidity_fast_over_riscv": 13.76,
+   "solidity_compiled": 179537,
+   "solidity_compiled_over_riscv": 5.27,
+   "yul_revm": 199322,
+   "yul_revm_over_riscv": 5.85,
+   "yul_revm-direct": 184513,
+   "yul_revm-direct_over_riscv": 5.42,
+   "yul_fast": 94131,
+   "yul_fast_over_riscv": 2.76,
+   "yul_compiled": 56645,
+   "yul_compiled_over_riscv": 1.66,
+   "bytecode_revm": 189572,
+   "bytecode_revm_over_riscv": 5.56,
+   "bytecode_revm-direct": 170925,
+   "bytecode_revm-direct_over_riscv": 5.02,
+   "bytecode_fast": 78523,
+   "bytecode_fast_over_riscv": 2.3,
+   "bytecode_compiled": 34960,
+   "bytecode_compiled_over_riscv": 1.03
+  },
+  {
+   "cycles_per_compression": 0,
+   "riscv": 13072,
+   "solidity_revm": 778211,
+   "solidity_revm_over_riscv": 59.53,
+   "solidity_revm-direct": 755168,
+   "solidity_revm-direct_over_riscv": 57.77,
+   "solidity_fast": 447880,
+   "solidity_fast_over_riscv": 34.26,
+   "solidity_compiled": 158537,
+   "solidity_compiled_over_riscv": 12.13,
+   "yul_revm": 178322,
+   "yul_revm_over_riscv": 13.64,
+   "yul_revm-direct": 163513,
+   "yul_revm-direct_over_riscv": 12.51,
+   "yul_fast": 73131,
+   "yul_fast_over_riscv": 5.59,
+   "yul_compiled": 35645,
+   "yul_compiled_over_riscv": 2.73,
+   "bytecode_revm": 168572,
+   "bytecode_revm_over_riscv": 12.9,
+   "bytecode_revm-direct": 149925,
+   "bytecode_revm-direct_over_riscv": 11.47,
+   "bytecode_fast": 57523,
+   "bytecode_fast_over_riscv": 4.4,
+   "bytecode_compiled": 13960,
+   "bytecode_compiled_over_riscv": 1.07
+  }
+ ],
+ "proving": {
+  "riscv": {
+   "median_s": 0.59,
+   "min_s": 0.33,
+   "max_s": 0.627,
+   "timed_proofs": 6,
+   "padded_cycles": 622872,
+   "peak_memory_gib": 3.5
+  },
+  "bytecode-revm": {
+   "median_s": 0.947,
+   "min_s": 0.913,
+   "max_s": 1.011,
+   "timed_proofs": 6,
+   "padded_cycles": 983496,
+   "peak_memory_gib": 5.49
+  },
+  "bytecode-revm-direct": {
+   "median_s": 0.931,
+   "min_s": 0.823,
+   "max_s": 0.957,
+   "timed_proofs": 6,
+   "padded_cycles": 983496,
+   "peak_memory_gib": 5.48
+  },
+  "bytecode-fast": {
+   "median_s": 0.881,
+   "min_s": 0.759,
+   "max_s": 0.907,
+   "timed_proofs": 6,
+   "padded_cycles": 884888,
+   "peak_memory_gib": 5.08
+  },
+  "bytecode-compiled": {
+   "median_s": 0.812,
+   "min_s": 0.772,
+   "max_s": 0.882,
+   "timed_proofs": 6,
+   "padded_cycles": 884888,
+   "peak_memory_gib": 5.08
+  },
+  "yul-revm": {
+   "median_s": 0.922,
+   "min_s": 0.825,
+   "max_s": 0.971,
+   "timed_proofs": 6,
+   "padded_cycles": 983496,
+   "peak_memory_gib": 5.47
+  },
+  "yul-fast": {
+   "median_s": 0.853,
+   "min_s": 0.838,
+   "max_s": 0.903,
+   "timed_proofs": 6,
+   "padded_cycles": 884896,
+   "peak_memory_gib": 4.95
+  },
+  "yul-compiled": {
+   "median_s": 0.863,
+   "min_s": 0.817,
+   "max_s": 0.875,
+   "timed_proofs": 6,
+   "padded_cycles": 884896,
+   "peak_memory_gib": 4.98
+  },
+  "solidity-revm": {
+   "median_s": 1.685,
+   "min_s": 1.597,
+   "max_s": 1.814,
+   "timed_proofs": 6,
+   "padded_cycles": 1836808,
+   "peak_memory_gib": 10.09
+  },
+  "solidity-fast": {
+   "median_s": 1.004,
+   "min_s": 0.883,
+   "max_s": 1.117,
+   "timed_proofs": 6,
+   "padded_cycles": 1049160,
+   "peak_memory_gib": 5.86
+  },
+  "solidity-compiled": {
+   "median_s": 0.914,
+   "min_s": 0.877,
+   "max_s": 1.072,
+   "timed_proofs": 6,
+   "padded_cycles": 918344,
+   "peak_memory_gib": 5.11
+  },
+  "calls-55-revm": {
+   "median_s": 0.893,
+   "min_s": 0.789,
+   "max_s": 1.048,
+   "timed_proofs": 6,
+   "padded_cycles": 917712,
+   "peak_memory_gib": 5.1
+  },
+  "calls-55-fast": {
+   "median_s": 0.85,
+   "min_s": 0.78,
+   "max_s": 1.043,
+   "timed_proofs": 6,
+   "padded_cycles": 884888,
+   "peak_memory_gib": 5.07
+  },
+  "calls-55-compiled": {
+   "median_s": 0.615,
+   "min_s": 0.538,
+   "max_s": 0.709,
+   "timed_proofs": 6,
+   "padded_cycles": 622744,
+   "peak_memory_gib": 3.51
+  }
+ },
+ "proving_time_over_riscv": {
+  "riscv": 1.0,
+  "bytecode-revm": 1.61,
+  "bytecode-revm-direct": 1.58,
+  "bytecode-fast": 1.49,
+  "bytecode-compiled": 1.38,
+  "yul-revm": 1.56,
+  "yul-fast": 1.45,
+  "yul-compiled": 1.46,
+  "solidity-revm": 2.86,
+  "solidity-fast": 1.7,
+  "solidity-compiled": 1.55,
+  "calls-55-revm": 1.51,
+  "calls-55-fast": 1.44,
+  "calls-55-compiled": 1.04
+ },
+ "proving_conditions": "transfer case; per program and round one warmup and two timed proofs, interleaved; Apple M5 Max, Now drawing from 'AC Power', load average 3.1 at start; no zero knowledge",
+ "validation": {
+  "parity_cases_per_program": 296,
+  "parity_all_match": true,
+  "gas_constant_on_valid_cases": true,
+  "compiled_runs_per_program": 1480,
+  "compiled_all_match": true,
+  "fuzz_programs": 2999949,
+  "fuzz_all_match": true,
+  "leanvm": {
+   "solidity": {
+    "revm": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "revm-direct": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "fast": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "compiled": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    }
+   },
+   "yul": {
+    "revm": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "revm-direct": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "fast": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "compiled": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    }
+   },
+   "bytecode": {
+    "revm": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "revm-direct": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "fast": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    },
+    "compiled": {
+     "valid_accepted": 100,
+     "invalid_rejected": 108
+    }
+   }
+  }
+ },
+ "rounds": [
+  {
+   "note": "first version: one match loop, gas passed by reference, generic PUSH",
+   "bytecode_fast": 531207,
+   "calls_55_fast": 487518,
+   "solidity_fast": 989920
+  },
+  {
+   "note": "gas kept in a register (memory expansion returns the gas left); PUSH1 and PUSH2 read their bytes directly",
+   "bytecode_fast": 509518,
+   "calls_55_fast": 477495,
+   "solidity_fast": 919255
+  },
+  {
+   "note": "static gas subtracted without a check, balance checked where gas is observable; explicit 0xff arm",
+   "bytecode_fast": 505239,
+   "calls_55_fast": 475548,
+   "solidity_fast": 895618
+  },
+  {
+   "note": "helpers moved to support.rs; compiled ahead of time added",
+   "bytecode_fast": 504922,
+   "calls_55_fast": 475219,
+   "solidity_fast": 895279
+  },
+  {
+   "note": "final: public and two hidden seeds on leanVM, invalid cases included",
+   "bytecode_fast": 504922,
+   "calls_55_fast": 475219,
+   "solidity_fast": 895279
+  }
+ ]
+}

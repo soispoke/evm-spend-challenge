@@ -1,0 +1,50 @@
+{
+ "all_match": true,
+ "programs": [
+  {
+   "bytecode_bytes": 2593,
+   "cases": 296,
+   "gas_used_max": 41075,
+   "gas_used_min": 41075,
+   "mismatches": [],
+   "program": "solidity",
+   "returned": 140
+  },
+  {
+   "bytecode_bytes": 1789,
+   "cases": 296,
+   "gas_used_max": 14658,
+   "gas_used_min": 14658,
+   "mismatches": [],
+   "program": "yul",
+   "returned": 140
+  },
+  {
+   "bytecode_bytes": 1935,
+   "cases": 296,
+   "gas_used_max": 14559,
+   "gas_used_min": 14559,
+   "mismatches": [],
+   "program": "bytecode",
+   "returned": 140
+  },
+  {
+   "bytecode_bytes": 899,
+   "cases": 296,
+   "gas_used_max": 12270,
+   "gas_used_min": 12270,
+   "mismatches": [],
+   "program": "evm-calls-55",
+   "returned": 296
+  },
+  {
+   "bytecode_bytes": 19,
+   "cases": 296,
+   "gas_used_max": 85,
+   "gas_used_min": 85,
+   "mismatches": [],
+   "program": "evm-calls-0",
+   "returned": 296
+  }
+ ]
+}

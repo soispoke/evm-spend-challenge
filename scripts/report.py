@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPRESSIONS, CALLS = 105, 55
+ENTRIES = ("solidity", "yul", "bytecode")
 KINDS = [
     ("stack", lambda o: o.startswith(("PUSH", "DUP", "SWAP")) or o == "POP"),
     ("arithmetic_and_comparisons", lambda o: o in {"ADD", "SUB", "MUL", "DIV", "MOD", "AND", "OR", "XOR", "NOT", "SHL",
@@ -64,8 +65,8 @@ def sha256(path: Path) -> str:
 def main() -> int:
     run = Path(sys.argv[1])
     ex = {name: execution(run / f"execute-{name}.jsonl") for name in
-          ("riscv", "solidity", "yul", "evm-calls-55", "evm-calls-0", "rust-sha256-only", "rust-start-only")}
-    scores = {name: json.loads((run / f"score-{name}.json").read_text()) for name in ("solidity", "yul")}
+          ("riscv", *ENTRIES, "evm-calls-55", "evm-calls-0", "rust-sha256-only", "rust-start-only")}
+    scores = {name: json.loads((run / f"score-{name}.json").read_text()) for name in ENTRIES}
     for name, score in scores.items():
         ex[name].update(max_cycles=score["score_cycles"], min_cycles=score["min_cycles"],
                         cases=score["valid_cases_executed"], bytecode_bytes=score["bytecode_bytes"])
@@ -73,12 +74,14 @@ def main() -> int:
     hashing = ex["rust-sha256-only"]["max_cycles"] - ex["rust-start-only"]["max_cycles"]
     start = ex["evm-calls-0"]["max_cycles"]
     calls = ex["evm-calls-55"]["max_cycles"] - hashing - start
-    outside = {name: ex[name]["max_cycles"] - ex["evm-calls-55"]["max_cycles"] for name in ("solidity", "yul")}
+    outside = {name: ex[name]["max_cycles"] - ex["evm-calls-55"]["max_cycles"] for name in ENTRIES}
     riscv_other = reference - hashing
 
     instructions = {}
-    for name in ("solidity", "yul", "evm-calls-55", "evm-calls-0"):
+    gas = {}
+    for name in (*ENTRIES, "evm-calls-55", "evm-calls-0"):
         profile = json.loads((run / f"opcodes-{name}.json").read_text())
+        gas[name] = profile["gas_used"]
         kinds = {kind: sum(n for op, n in profile["opcodes"] if test(op)) for kind, test in KINDS}
         kinds["other"] = profile["instructions"] - sum(kinds.values())
         instructions[name] = {"total": profile["instructions"], "by_kind": kinds,
@@ -87,7 +90,7 @@ def main() -> int:
     def estimate(per_compression: int) -> dict:
         hash_part = COMPRESSIONS * per_compression
         row = {"cycles_per_compression": per_compression, "riscv": riscv_other + hash_part}
-        for name in ("solidity", "yul"):
+        for name in ENTRIES:
             row[name] = start + calls + outside[name] + hash_part
             row[f"{name}_over_riscv"] = round(row[name] / row["riscv"], 2)
         return row
@@ -104,19 +107,20 @@ def main() -> int:
         batches[path.stem] = timing(tmp)
         tmp.unlink()
     ratios = {name: sorted(round(b[name]["median_s"] / b["riscv"]["median_s"], 2) for b in batches.values() if name in b)
-              for name in ("evm-solidity", "evm-yul")}
+              for name in (f"evm-{e}" for e in ENTRIES) if any(name in b for b in batches.values())}
 
     hidden = json.loads((run / "hidden-checks.json").read_text())
-    removal = {name: json.loads((run / f"rule-removal-{name}.json").read_text())["mutants"] for name in ("solidity", "yul")}
+    removal = {name: json.loads((run / f"rule-removal-{name}.json").read_text())["mutants"] for name in ENTRIES}
     setup = jsonl(run / "timing.jsonl")[0]
     leanvm = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT / "vendor/leanVM", capture_output=True, text=True).stdout.strip()
     summary = {
         "statement": "MSP Spend(20), SHA-256 edition, v1",
         "machine": f"leanVM riscv-exploration {leanvm}, RV64IM",
         "cycles": ex,
-        "cycles_over_reference": {name: round(ex[name]["max_cycles"] / reference, 3) for name in ("solidity", "yul", "evm-calls-55")},
+        "cycles_over_reference": {name: round(ex[name]["max_cycles"] / reference, 3) for name in (*ENTRIES, "evm-calls-55")},
         "cycles_over_sha256_only_control": {name: round(ex[name]["max_cycles"] / ex["rust-sha256-only"]["max_cycles"], 3)
-                                            for name in ("solidity", "yul")},
+                                            for name in ENTRIES},
+        "gas_used": gas,
         "breakdown": {"sha256": hashing, "sha256_per_compression": round(hashing / COMPRESSIONS, 1),
                       "precompile_calls": calls, "precompile_calls_per_call": round(calls / CALLS, 1),
                       "evm_start_up": start, "bytecode_outside_calls": outside,
@@ -131,7 +135,7 @@ def main() -> int:
                               f"Apple M5 Max, {setup['power'][0] if setup['power'] else 'power unknown'}; no zero knowledge",
         "validation": {
             "public_cases": {"cases": 59, "valid": 20, "invalid": 39,
-                             "rejected_on_leanvm": {k: len(ex[k]["failures"]) == 0 for k in ("riscv", "solidity", "yul")}},
+                             "rejected_on_leanvm": {k: len(ex[k]["failures"]) == 0 for k in ("riscv", *ENTRIES)}},
             "hidden_seeds": {"scored": {k: v["hidden_seeds"] for k, v in scores.items()},
                              "checked": sorted({h["seed"] for h in hidden}),
                              "all_passed": all(not h["failures"] for h in hidden) and all(
@@ -144,6 +148,7 @@ def main() -> int:
                                                        "statement/src/lib.rs", "engine/src/lib.rs",
                                                        "evm/src/SpendSha256.sol", "evm/baseline.hex",
                                                        "evm/yul/generate.py", "evm/yul/bytecode.hex",
+                                                       "evm/bytecode/generate.py", "evm/bytecode/bytecode.hex",
                                                        "evm/controls/calls-55.hex", "evm/controls/calls-0.hex")},
             "timed_elfs": setup["elf_sha256"],
         },

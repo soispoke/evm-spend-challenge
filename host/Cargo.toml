@@ -13,6 +13,7 @@ bincode = "1"
 serde_json = "1"
 spend-sha256 = { path = "../statement" }
 spend-evm-engine = { path = "../engine" }
+spend-evm-interpreters = { path = "../interpreters" }
 
 [dev-dependencies]
 revm-interpreter = { version = "=43.0.0", default-features = false, features = ["memory_limit"] }

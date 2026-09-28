@@ -784,6 +784,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "spend-blake2s-edition-guests"
+version = "0.1.0"
+dependencies = [
+ "leanvm-guest",
+ "spend-evm-interpreters",
+ "spend-runtime",
+ "spend-sha256",
+]
+
+[[package]]
 name = "spend-control-guests"
 version = "0.1.0"
 dependencies = [
@@ -809,6 +819,34 @@ version = "0.1.0"
 dependencies = [
  "spend-evm-engine",
  "spend-runtime",
+]
+
+[[package]]
+name = "spend-evm-interpreters"
+version = "0.1.0"
+dependencies = [
+ "revm-interpreter",
+ "sha2",
+ "spend-evm-engine",
+ "spend-sha256",
+]
+
+[[package]]
+name = "spend-evm-variants-guest"
+version = "0.1.0"
+dependencies = [
+ "spend-evm-interpreters",
+ "spend-runtime",
+]
+
+[[package]]
+name = "spend-hash-choice-guests"
+version = "0.1.0"
+dependencies = [
+ "leanvm-guest",
+ "sha2",
+ "spend-runtime",
+ "spend-sha256",
 ]
 
 [[package]]

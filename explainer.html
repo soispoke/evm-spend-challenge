@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EVM Spend Challenge</title>
 <style>
 :root {
@@ -13,7 +15,6 @@
   --entry: #6C24DF;
   --entry-soft: #F2EAFE;
   --seg-code: #6C24DF;
-  --seg-call: #BD3B87;
   --seg-hash: #CFCED7;
   --on-fill: #FFFFFF;
   --measured: #0E8074;
@@ -36,7 +37,6 @@
     --entry: #B38DF0;
     --entry-soft: #261C3A;
     --seg-code: #8F55EF;
-    --seg-call: #CC62A3;
     --seg-hash: #4A4952;
     --on-fill: #111014;
     --measured: #3FC1B3;
@@ -57,7 +57,6 @@
   --entry: #B38DF0;
   --entry-soft: #261C3A;
   --seg-code: #8F55EF;
-  --seg-call: #CC62A3;
   --seg-hash: #4A4952;
   --on-fill: #111014;
   --measured: #3FC1B3;
@@ -119,7 +118,8 @@ tr.total-row td { font-weight: 600; border-top: 1px solid var(--line-strong); }
   border: 1px solid var(--line-strong); border-radius: 6px; padding: 7px 12px; cursor: pointer;
 }
 .presets button[aria-pressed="true"] { background: var(--seg-code); border-color: var(--seg-code); color: var(--on-fill); }
-.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.choice { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: center; }
+.choice-label { font-weight: 600; font-size: 15px; }
 .control { display: grid; gap: 4px; }
 .control label { font-weight: 600; font-size: 15px; }
 .control .value { font: 500 14px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
@@ -133,7 +133,6 @@ input[type="range"] { width: 100%; accent-color: var(--seg-code); margin: 0; }
 .seg { height: 100%; min-width: 3px; flex: none; border-right: 2px solid var(--bg-sunk); transition: width 160ms ease; }
 .seg:last-child { border-right: 0; }
 .seg-hash { background: var(--seg-hash); }
-.seg-call { background: var(--seg-call); }
 .seg-code { background: var(--seg-code); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
 .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
@@ -153,7 +152,9 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
   .lane-name { padding: 6px 0 2px; }
   .arrow { height: 16px; }
   .arrow::before { content: "\2193"; }
-  .controls { grid-template-columns: 1fr; }
+  .choice { grid-template-columns: 1fr; gap: 6px; }
+  th, td { padding: 8px 7px; }
+  table { font-size: 14px; }
   .bar-row { grid-template-columns: 56px 1fr; }
   .bar-row .total { grid-column: 2; text-align: left; }
 }
@@ -173,10 +174,10 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
   <h2 id="findings">What we found</h2>
   <ul class="plain">
     <li>Plain Solidity takes 2.66 times the RISC-V cycles. Most of the extra is code the compiler generates around each hash call.</li>
-    <li>Hand-optimized Yul takes 1.36 times. A program that only makes the 55 hash calls, with none of the checks, takes 1.22 times, so entries have little room left.</li>
-    <li>The RISC-V side is already near its best: it takes 1.3% more cycles than a Rust program that only makes the 55 SHA-256 calls.</li>
-    <li>What remains is the interpreter's overhead: 108,125 cycles for the 55 precompile calls themselves, plus the entry's other code. Faster hashing in the zkVM would shrink both sides by the same amount, so the ratio would rise, to about 5.9 times for the Yul entry at 200 cycles per compression.</li>
-    <li>Gas is only a rough guide to this cost. Here, ordinary EVM instructions cost 23 to 27 cycles per unit of gas and the SHA-256 calls about 46.</li>
+    <li>Hand-optimized entries take 1.36 times (Yul) and 1.34 times (hand-written bytecode). A program that only makes the 55 hash calls, with none of the checks, takes 1.22 times, so entries have little room left.</li>
+    <li>What remains is the interpreter. The same bytecode takes 1.10 times the RISC-V cycles when run by an interpreter written for proving, and 1.00 times when compiled ahead of time, so almost all of the gap comes from interpreting the program, not from EVM bytecode itself.</li>
+    <li>The interpreter matters more as hashing gets faster. At 200 cycles per SHA-256 compression, the hand-written entry would take 5.56 times the RISC-V cycles under REVM, 2.30 times with the new interpreter and 1.03 times compiled.</li>
+    <li>Gas ranks the entries in the same order as cycles but overstates their differences. The SHA-256 precompile costs about 85 cycles per unit of gas to prove, while the rest of the hand-written entry costs about 18 under REVM.</li>
   </ul>
 </section>
 
@@ -207,53 +208,82 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
   <h2 id="results">Results so far</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th></th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Proof time</th></tr></thead>
+      <thead><tr><th></th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Gas</th></tr></thead>
       <tbody>
-        <tr><td>RISC-V reference (Rust)</td><td class="r">460,471</td><td class="r">1.00×</td><td class="r">0.60 s</td></tr>
-        <tr class="entry-row"><td>EVM entry: Solidity baseline</td><td class="r">1,225,610</td><td class="r">2.66×</td><td class="r">1.67 s</td></tr>
-        <tr class="entry-row"><td>EVM entry: optimized Yul</td><td class="r">625,721</td><td class="r">1.36×</td><td class="r">1.01 s</td></tr>
+        <tr><td>RISC-V reference (Rust)</td><td class="r">460,471</td><td class="r">1.00×</td><td class="r"></td></tr>
+        <tr class="entry-row"><td>EVM entry: Solidity baseline</td><td class="r">1,225,610</td><td class="r">2.66×</td><td class="r">41,075</td></tr>
+        <tr class="entry-row"><td>EVM entry: optimized Yul</td><td class="r">625,721</td><td class="r">1.36×</td><td class="r">14,658</td></tr>
+        <tr class="entry-row"><td>EVM entry: hand-written bytecode</td><td class="r">615,971</td><td class="r">1.34×</td><td class="r">14,559</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note">Cycles are the largest count over the valid test cases. Proof times are medians of six leanVM proofs of one spend, on an Apple M5 Max on AC power, without zero knowledge. Times vary between runs: across three runs, the Solidity baseline took 2.66 to 3.05 times the reference's proof time and the Yul entry 1.47 to 1.77 times.</p>
-  <p>Both entries run the same SHA-256 code as the reference, plus about 108,000 cycles for the interpreter to make the 55 precompile calls. What separates them is the EVM bytecode outside the calls:</p>
+  <p class="note">Cycles are the largest count over the valid test cases. Gas is what each entry uses under Cancun rules, the same on every valid case; a RISC-V program has no gas.</p>
+  <p>All three entries run the same SHA-256 code as the reference, plus about 108,000 cycles for REVM to make the 55 precompile calls. What separates them is the EVM bytecode outside the calls:</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th></th><th class="r">Solidity baseline</th><th class="r">Optimized Yul</th></tr></thead>
+      <thead><tr><th></th><th class="r">Solidity</th><th class="r">Yul</th><th class="r">Hand-written</th></tr></thead>
       <tbody>
-        <tr><td>SHA-256, 105 compressions</td><td class="r">447,399</td><td class="r">447,399</td></tr>
-        <tr><td>The 55 precompile calls themselves</td><td class="r">108,125</td><td class="r">108,125</td></tr>
-        <tr><td>EVM bytecode outside the calls</td><td class="r">663,651</td><td class="r">63,762</td></tr>
-        <tr><td>Start-up</td><td class="r">6,435</td><td class="r">6,435</td></tr>
-        <tr class="total-row"><td>Total</td><td class="r">1,225,610</td><td class="r">625,721</td></tr>
+        <tr><td>SHA-256, 105 compressions</td><td class="r">447,399</td><td class="r">447,399</td><td class="r">447,399</td></tr>
+        <tr><td>The 55 precompile calls themselves</td><td class="r">108,125</td><td class="r">108,125</td><td class="r">108,125</td></tr>
+        <tr><td>EVM bytecode outside the calls</td><td class="r">663,651</td><td class="r">63,762</td><td class="r">54,012</td></tr>
+        <tr><td>Start-up</td><td class="r">6,435</td><td class="r">6,435</td><td class="r">6,435</td></tr>
+        <tr class="total-row"><td>Total</td><td class="r">1,225,610</td><td class="r">625,721</td><td class="r">615,971</td></tr>
       </tbody>
     </table>
   </div>
-  <p>On the transfer case, the Solidity baseline executes 8,684 EVM instructions, mostly code the compiler generates around each hash: moving values on the stack, computing and bounds-checking input offsets, and jumps. The Yul entry executes 1,348. It reuses one message buffer, has each precompile call write its result where the next hash reads it, has no loops, never branches on private data, and checks all rules once at the end. It skips checking each call's result, because under the fixed gas limit a SHA-256 call cannot fail.</p>
+  <p>On the transfer case, the Solidity baseline executes 8,684 EVM instructions, mostly code the compiler generates around each hash: moving values on the stack, computing and bounds-checking input offsets, and jumps. The Yul entry executes 1,348 and the hand-written entry 1,242. Both have no loops, never branch on private data, have each precompile call write its result where the next hash reads it, and skip checking each call's result, because under the fixed gas limit a SHA-256 call cannot fail. The hand-written entry also keeps its working values on the stack and writes each tag byte and shared field once.</p>
+  <p>Gas follows the same order but overstates the differences: the Solidity baseline uses 2.82 times the gas of the hand-written entry and 1.99 times its cycles. The precompile's own 5,256 gas pays for 447,399 cycles of hashing, so in proving terms gas prices hashing about five times below the other work under REVM, and further below it with a faster interpreter.</p>
+</section>
+
+<section aria-labelledby="interpreter">
+  <h2 id="interpreter">How much is the interpreter</h2>
+  <p>The score fixes REVM so that entries compete on their bytecode. To see how much of the remaining gap is the interpreter, the same bytecode also ran in three other ways. Each gives the same results and gas as REVM on every test case, and the two interpreters also on three million random programs.</p>
+  <ul class="plain">
+    <li><strong>REVM with a direct SHA-256 call:</strong> the precompile runs inside the call instruction, hashing EVM memory in place, instead of through a new call frame.</li>
+    <li><strong>An interpreter written for proving:</strong> one dispatch loop, SHA-256 hashed straight from EVM memory, and gas checked only where a program can observe it.</li>
+    <li><strong>Compiled ahead of time:</strong> each program translated into one Rust function, which shows about the best an interpreter could reach. A verifier would have to trust the compiler, or a proof that the compiled program matches the bytecode.</li>
+  </ul>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Hand-written entry</th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Proof time</th><th class="r">vs RISC-V</th></tr></thead>
+      <tbody>
+        <tr><td>RISC-V reference</td><td class="r">460,471</td><td class="r">1.00×</td><td class="r">0.59 s</td><td class="r">1.00×</td></tr>
+        <tr class="entry-row"><td>REVM, as scored</td><td class="r">615,971</td><td class="r">1.34×</td><td class="r">0.95 s</td><td class="r">1.61×</td></tr>
+        <tr class="entry-row"><td>REVM, direct SHA-256 call</td><td class="r">597,324</td><td class="r">1.30×</td><td class="r">0.93 s</td><td class="r">1.58×</td></tr>
+        <tr class="entry-row"><td>Interpreter written for proving</td><td class="r">504,922</td><td class="r">1.10×</td><td class="r">0.88 s</td><td class="r">1.49×</td></tr>
+        <tr class="entry-row"><td>Compiled ahead of time</td><td class="r">461,359</td><td class="r">1.00×</td><td class="r">0.81 s</td><td class="r">1.38×</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Proof times are medians of six leanVM proofs of one spend, from one interleaved run on an Apple M5 Max on AC power, without zero knowledge. Programs with the same padded trace took 0.81 to 0.88 seconds, so smaller differences are noise.</p>
+  <p>Proof time follows the padded trace, which leanVM rounds up to powers of two, table by table. The compiled version runs as many cycles as the reference, but its largest table ends just over a power of two that the reference stays 0.5% under, so its trace is 42% larger. The Solidity baseline gains the most from a better interpreter, from 2.66 to 1.94 times the RISC-V cycles, and 1.32 times compiled.</p>
 </section>
 
 <section aria-labelledby="explore">
   <h2 id="explore">How the gap can change</h2>
-  <p>Entries cut the EVM bytecode outside the calls. A zkVM accelerator for SHA-256 would cut the hashing cycles of both versions by the same amount, which lowers both totals but raises the ratio.</p>
+  <p>Entries cut the EVM bytecode they run; the interpreter sets what each instruction costs. A zkVM accelerator for SHA-256 would cut the hashing cycles of both versions by the same amount, which lowers both totals but raises the ratio.</p>
   <div class="explorer">
-    <div class="presets" role="group" aria-label="Scenarios">
-      <button type="button" data-o="12066" data-c="4261">Solidity baseline (measured)</button>
-      <button type="button" data-o="1159" data-c="4261">Optimized Yul (measured)</button>
-      <button type="button" data-o="1159" data-c="200">Yul with SHA-256 at 200 cycles per compression (estimate)</button>
+    <div class="choice">
+      <span class="choice-label" id="entry-label">Entry</span>
+      <div class="presets" role="group" aria-labelledby="entry-label">
+        <button type="button" data-entry="solidity">Solidity baseline</button>
+        <button type="button" data-entry="yul">Optimized Yul</button>
+        <button type="button" data-entry="bytecode">Hand-written bytecode</button>
+      </div>
     </div>
-    <div class="controls">
-      <div class="control">
-        <label for="overhead">EVM bytecode outside the calls, average per call</label>
-        <input type="range" id="overhead" min="0" max="12066" step="1" value="12066">
-        <div class="value" id="overhead-value">12,066 cycles</div>
-        <div class="hint">Solidity baseline: 12,066. Optimized Yul: 1,159.</div>
+    <div class="choice">
+      <span class="choice-label" id="run-label">Run by</span>
+      <div class="presets" role="group" aria-labelledby="run-label">
+        <button type="button" data-run="revm">REVM, as scored</button>
+        <button type="button" data-run="fast">Interpreter written for proving</button>
+        <button type="button" data-run="compiled">Compiled ahead of time</button>
       </div>
-      <div class="control">
-        <label for="hashcost">SHA-256 cycles per compression</label>
-        <input type="range" id="hashcost" min="0" max="4261" step="1" value="4261">
-        <div class="value" id="hashcost-value">4,261 cycles</div>
-        <div class="hint">Software SHA-256 today: 4,261. Each spend needs 105 compressions. An accelerator is modeled as fewer cycles per compression.</div>
-      </div>
+    </div>
+    <div class="control">
+      <label for="hashcost">SHA-256 cycles per compression</label>
+      <input type="range" id="hashcost" min="0" max="4261" step="1" value="4261">
+      <div class="value" id="hashcost-value">4,261 cycles</div>
+      <div class="hint">Software SHA-256 today: 4,261. Each spend needs 105 compressions. An accelerator is modeled as fewer cycles per compression.</div>
     </div>
     <div class="bars" aria-hidden="true">
       <div class="bar-row">
@@ -268,20 +298,18 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
         <span>EVM</span>
         <div class="track"><div class="stack">
           <div class="seg seg-hash" id="e-hash"></div>
-          <div class="seg seg-call" id="e-call"></div>
           <div class="seg seg-code" id="e-other"></div>
         </div></div>
         <span class="total" id="evm-total"></span>
       </div>
     </div>
     <div class="legend">
-      <span><i style="background: var(--seg-hash)"></i>SHA-256</span>
-      <span><i style="background: var(--seg-call)"></i>The precompile calls themselves</span>
-      <span><i style="background: var(--seg-code)"></i>Everything else</span>
+      <span><i style="background: var(--seg-hash)"></i>SHA-256, the same code in both</span>
+      <span><i style="background: var(--seg-code)"></i>Everything else: for the EVM version, running the entry's bytecode</span>
     </div>
     <div class="result" aria-live="polite">
-      <b id="ratio">2.66×</b><span>EVM cycles over RISC-V cycles</span>
-      <b id="extra">765,139</b><span>extra EVM cycles</span>
+      <b id="ratio">1.34×</b><span>EVM cycles over RISC-V cycles</span>
+      <b id="extra">155,500</b><span>extra EVM cycles</span>
       <span class="status measured" id="status">Measured</span>
     </div>
   </div>
@@ -319,19 +347,19 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
     <li>Every valid case is run on the fixed version of leanVM. The padded trace size must be the same for all valid inputs, because the proof reveals it.</li>
     <li>The score is the largest cycle count over the valid cases. Lower is better.</li>
   </ol>
-  <p>The invalid test cases cover every rule: removing any one rule check from either entry makes a test fail. Entries are EVM bytecode, so other RISC-V zkVMs could prove both versions on the same machine to compare proof times, but the score comes only from the fixed leanVM version. Final timings should use zero knowledge, which Jolt supports and this leanVM version does not.</p>
+  <p>The invalid test cases cover every rule: removing any one rule check from any of the three entries makes a test fail. Entries are EVM bytecode, so other RISC-V zkVMs could prove both versions on the same machine to compare proof times, but the score comes only from the fixed leanVM version. Final timings should use zero knowledge, which Jolt supports and this leanVM version does not.</p>
 </section>
 
 <section aria-labelledby="beyond">
   <h2 id="beyond">Beyond this challenge</h2>
-  <p>Two questions matter for EIP-8288 that this challenge does not measure.</p>
-  <p><strong>Interpreter cost.</strong> The challenge fixes the interpreter, and its overhead is most of what remains. A second round could let entrants change the interpreter instead: a faster REVM, a direct path for precompile calls, or compiling EVM bytecode to RISC-V before proving. An interpreter must run every EVM program correctly, so it would also need to pass Ethereum's standard execution tests.</p>
+  <p>Two questions matter for EIP-8288 that the score does not settle.</p>
+  <p><strong>Changing the interpreter.</strong> The measurements above show that a better interpreter closes most of the gap. Swapping it changes no program, since programs are named by their bytecode, but it is a verifier upgrade: a proof shows that one specific interpreter build ran the program, so verifiers must trust that build to follow the EVM rules exactly. A second round could let entrants optimize the interpreter, with the tests against REVM as the correctness gate.</p>
   <p><strong>Stable meaning for immutable programs.</strong> A privacy pool's program must mean the same thing forever. The pool would name it by EVM version and bytecode hash, and the EVM used for proofs would change only by adding opcodes and precompiles in new versions, without gas metering. EVM implementations already keep every past fork's rules, so old versions stay cheap to support. The RISC-V base instruction set is already frozen.</p>
 </section>
 
 <section aria-labelledby="open">
   <h2 id="open">Still to decide</h2>
-  <p>What counts as close enough (proof time and peak memory with zero knowledge on a named laptop), how the hidden test seeds are chosen, and whether other zkVMs count toward the score.</p>
+  <p>What counts as close enough (proof time and peak memory with zero knowledge on a named laptop), how the hidden test seeds are chosen, whether other zkVMs count toward the score, and whether a second round targets the interpreter.</p>
 </section>
 
 <footer>
@@ -342,52 +370,52 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
 
 <script>
 (() => {
-  // Measured components, in leanVM RV64IM cycles.
-  const HASH = 447399;         // SHA-256, 105 compressions, the same in both versions
-  const CALLS = 108125;        // the 55 precompile calls themselves, excluding hashing
-  const EVM_START = 6435;      // EVM start-up
-  const CODE = { 12066: 663651, 1159: 63762 };   // measured bytecode outside the calls
-  const NATIVE_OTHER = 13072;  // RISC-V version outside hashing
+  // Measured leanVM RV64IM cycles outside SHA-256, per entry and way of running
+  // it. SHA-256 is the same code in both versions: 447,399 cycles for 105
+  // compressions.
+  const HASH = 447399;
   const C_MAX = 4261;
-  const SCALE = HASH + CALLS + EVM_START + CODE[12066];   // 1,225,610, the Solidity baseline
+  const NATIVE_OTHER = 13072;
+  const OTHER = {
+    solidity: { revm: 778211, fast: 447880, compiled: 158537 },
+    yul:      { revm: 178322, fast: 73131,  compiled: 35645 },
+    bytecode: { revm: 168572, fast: 57523,  compiled: 13960 },
+  };
+  const SCALE = HASH + OTHER.solidity.revm;   // 1,225,610, the Solidity baseline under REVM
 
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => Math.round(n).toLocaleString("en-US");
-  const overhead = $("overhead"), hashcost = $("hashcost");
-  const buttons = Array.from(document.querySelectorAll(".presets button"));
+  const hashcost = $("hashcost");
+  const entryButtons = Array.from(document.querySelectorAll("[data-entry]"));
+  const runButtons = Array.from(document.querySelectorAll("[data-run]"));
+  let entry = "bytecode", run = "revm";
   const width = (el, v) => { el.style.width = (100 * v / SCALE) + "%"; el.hidden = v === 0; };
 
   function render() {
-    const o = Number(overhead.value), c = Number(hashcost.value);
+    const c = Number(hashcost.value);
     const hash = c === C_MAX ? HASH : 105 * c;
-    const code = o in CODE ? CODE[o] : 55 * o;
+    const other = OTHER[entry][run];
     const native = hash + NATIVE_OTHER;
-    const evm = hash + CALLS + EVM_START + code;
+    const evm = hash + other;
     width($("n-hash"), hash);
     width($("n-other"), NATIVE_OTHER);
     width($("e-hash"), hash);
-    width($("e-call"), CALLS);
-    width($("e-other"), EVM_START + code);
+    width($("e-other"), other);
     $("native-total").textContent = fmt(native);
     $("evm-total").textContent = fmt(evm);
-    $("overhead-value").textContent = fmt(o) + " cycles";
     $("hashcost-value").textContent = fmt(c) + " cycles";
     $("ratio").textContent = (evm / native).toFixed(2) + "×";
     $("extra").textContent = fmt(evm - native);
-    const measured = c === C_MAX && o in CODE;
+    const measured = c === C_MAX;
     const status = $("status");
     status.className = "status " + (measured ? "measured" : "estimate");
     status.textContent = measured ? "Measured" : "Estimate from the measured numbers";
-    buttons.forEach((b) => b.setAttribute("aria-pressed",
-      String(Number(b.dataset.o) === o && Number(b.dataset.c) === c)));
+    entryButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.entry === entry)));
+    runButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.run === run)));
   }
 
-  buttons.forEach((b) => b.addEventListener("click", () => {
-    overhead.value = b.dataset.o;
-    hashcost.value = b.dataset.c;
-    render();
-  }));
-  overhead.addEventListener("input", render);
+  entryButtons.forEach((b) => b.addEventListener("click", () => { entry = b.dataset.entry; render(); }));
+  runButtons.forEach((b) => b.addEventListener("click", () => { run = b.dataset.run; render(); }));
   hashcost.addEventListener("input", render);
   render();
 })();

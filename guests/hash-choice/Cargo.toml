@@ -1,0 +1,10 @@
+[package]
+name = "spend-hash-choice-guests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spend-runtime = { path = "../runtime" }
+spend-sha256 = { path = "../../statement" }
+leanvm-guest = { path = "../../vendor/leanVM/guests/rt" }
+sha2 = { version = "=0.10.9", default-features = false }

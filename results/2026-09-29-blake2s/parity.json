@@ -1,0 +1,23 @@
+{
+ "all_match": true,
+ "entries": [
+  {
+   "bytecode_bytes": 1935,
+   "cases": 177,
+   "entry": "precompile",
+   "gas_used_max": 14559,
+   "gas_used_min": 14559,
+   "mismatches": [],
+   "returned": 60
+  },
+  {
+   "bytecode_bytes": 18500,
+   "cases": 177,
+   "entry": "blake2s-in-evm",
+   "gas_used_max": 2752716,
+   "gas_used_min": 2752716,
+   "mismatches": [],
+   "returned": 60
+  }
+ ]
+}

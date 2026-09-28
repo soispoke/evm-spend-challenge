@@ -1,0 +1,57 @@
+riscv-base                              344,072 cycles  padded [491608]
+riscv-blake2s-instruction                52,676 cycles  padded [92560]
+evm-precompile-software-revm            494,144 cycles  padded [852296]
+evm-precompile-instruction-revm         202,548 cycles  padded [246336]
+evm-precompile-software-fast            394,661 cycles  padded [491552]
+evm-precompile-instruction-fast         103,065 cycles  padded [172304]
+evm-precompile-software-compiled        349,442 cycles  padded [491552]
+evm-precompile-instruction-compiled       57,846 cycles  padded [98576]
+evm-in-evm-revm                      76,776,443 cycles  padded [117443608]
+evm-in-evm-fast                      56,136,848 cycles  padded [75500560]
+evm-in-evm-compiled                   5,844,806 cycles  padded [8456208]
+{
+ "riscv-base": [
+  344072,
+  0.379
+ ],
+ "riscv-blake2s-instruction": [
+  52676,
+  0.085
+ ],
+ "evm-precompile-software-revm": [
+  494144,
+  0.773
+ ],
+ "evm-precompile-instruction-revm": [
+  202548,
+  0.245
+ ],
+ "evm-precompile-software-fast": [
+  394661,
+  0.487
+ ],
+ "evm-precompile-instruction-fast": [
+  103065,
+  0.197
+ ],
+ "evm-precompile-software-compiled": [
+  349442,
+  0.465
+ ],
+ "evm-precompile-instruction-compiled": [
+  57846,
+  0.108
+ ],
+ "evm-in-evm-revm": [
+  76776443,
+  null
+ ],
+ "evm-in-evm-fast": [
+  56136848,
+  null
+ ],
+ "evm-in-evm-compiled": [
+  5844806,
+  null
+ ]
+}

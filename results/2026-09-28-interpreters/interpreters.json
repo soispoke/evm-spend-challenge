@@ -1,0 +1,271 @@
+{
+ "time": "2026-09-28T22:30:59",
+ "note": "",
+ "interpreter_sha256": "e0521cb00c13d1ae",
+ "parity_cases": 1480,
+ "compiled_parity_runs": 7400,
+ "fuzz_programs": 3000000,
+ "fuzz_seeds": [
+  101,
+  202,
+  303
+ ],
+ "leanvm_cases": "public and hidden seeds 1 and 2, invalid cases included",
+ "results": {
+  "solidity": {
+   "gas": 41075,
+   "revm": {
+    "max_cycles": 1225610,
+    "min_cycles": 1225610,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     1836808
+    ],
+    "witness_log_size": [
+     27
+    ]
+   },
+   "revm-direct": {
+    "max_cycles": 1202567,
+    "min_cycles": 1202567,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     1836808
+    ],
+    "witness_log_size": [
+     27
+    ]
+   },
+   "fast": {
+    "max_cycles": 895279,
+    "min_cycles": 895279,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     1049160
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "compiled": {
+    "max_cycles": 605936,
+    "min_cycles": 605936,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     918344
+    ],
+    "witness_log_size": [
+     26
+    ]
+   }
+  },
+  "yul": {
+   "gas": 14658,
+   "revm": {
+    "max_cycles": 625721,
+    "min_cycles": 625697,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     983496
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "revm-direct": {
+    "max_cycles": 610912,
+    "min_cycles": 610888,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     983496
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "fast": {
+    "max_cycles": 520530,
+    "min_cycles": 520506,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     884896
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "compiled": {
+    "max_cycles": 483044,
+    "min_cycles": 483021,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     884896
+    ],
+    "witness_log_size": [
+     26
+    ]
+   }
+  },
+  "bytecode": {
+   "gas": 14559,
+   "revm": {
+    "max_cycles": 615971,
+    "min_cycles": 615949,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     983496
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "revm-direct": {
+    "max_cycles": 597324,
+    "min_cycles": 597302,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     983496
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "fast": {
+    "max_cycles": 504922,
+    "min_cycles": 504900,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     884888
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "compiled": {
+    "max_cycles": 461359,
+    "min_cycles": 461339,
+    "valid_cases": 100,
+    "invalid_rejected": 108,
+    "padded_cycles": [
+     884888
+    ],
+    "witness_log_size": [
+     26
+    ]
+   }
+  },
+  "evm-calls-55": {
+   "gas": 12270,
+   "revm": {
+    "max_cycles": 561959,
+    "min_cycles": 561959,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     917712
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "revm-direct": {
+    "max_cycles": 547263,
+    "min_cycles": 547263,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     917712
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "fast": {
+    "max_cycles": 475219,
+    "min_cycles": 475219,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     884888
+    ],
+    "witness_log_size": [
+     26
+    ]
+   },
+   "compiled": {
+    "max_cycles": 450599,
+    "min_cycles": 450599,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     622744
+    ],
+    "witness_log_size": [
+     25
+    ]
+   }
+  },
+  "evm-calls-0": {
+   "gas": 85,
+   "revm": {
+    "max_cycles": 6435,
+    "min_cycles": 6435,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     8352
+    ],
+    "witness_log_size": [
+     21
+    ]
+   },
+   "revm-direct": {
+    "max_cycles": 6480,
+    "min_cycles": 6480,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     8480
+    ],
+    "witness_log_size": [
+     21
+    ]
+   },
+   "fast": {
+    "max_cycles": 1725,
+    "min_cycles": 1725,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     2976
+    ],
+    "witness_log_size": [
+     21
+    ]
+   },
+   "compiled": {
+    "max_cycles": 1069,
+    "min_cycles": 1069,
+    "valid_cases": 208,
+    "invalid_rejected": 0,
+    "padded_cycles": [
+     1632
+    ],
+    "witness_log_size": [
+     21
+    ]
+   }
+  }
+ }
+}

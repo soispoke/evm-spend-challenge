@@ -8,10 +8,14 @@ every violated rule and the 32-byte statement digest; a valid input violates
 no rule, and an implementation must return exactly that digest for it and
 must not return anything for an invalid input.
 
+With --hash blake2s it produces the BLAKE2s edition instead: the same
+statement with BLAKE2s-256 as every hash, and nothing else changed.
+
 Usage:
   python3 oracle/spend_sha256.py write fixtures/public.json
   python3 oracle/spend_sha256.py check fixtures/public.json
   python3 oracle/spend_sha256.py hidden OUT.json --seed N --count K
+  python3 oracle/spend_sha256.py --hash blake2s write fixtures/public-blake2s.json
 """
 from __future__ import annotations
 
@@ -50,8 +54,12 @@ RULES = (
 )
 
 
+# The statement's hash; main() switches it for the BLAKE2s edition.
+HASH, EDITION = hashlib.sha256, "SHA-256"
+
+
 def H(tag: int, *parts: bytes) -> bytes:
-    return hashlib.sha256(bytes([tag]) + b"".join(parts)).digest()
+    return HASH(bytes([tag]) + b"".join(parts)).digest()
 
 
 def u128(value: int) -> bytes:
@@ -390,7 +398,7 @@ def generate(seed: int) -> dict:
     covered = {case["rule"] for case in cases if not case["valid"]}
     assert covered == set(RULES), sorted(set(RULES) - covered)
     return {
-        "statement": "MSP Spend(20), SHA-256 edition, v1",
+        "statement": f"MSP Spend(20), {EDITION} edition, v1",
         "input_bytes": INPUT_BYTES,
         "seed": seed,
         "rules": list(RULES),
@@ -405,12 +413,13 @@ def hidden(seed: int, count: int) -> dict:
     cases = [case_record(f"hidden-valid-{k}", random_valid(rng).encode()) for k in range(count)]
     mutations = invalid_catalog(rng)
     cases += [case_record(f"hidden-{name}", payload, rule) for name, rule, payload in mutations]
-    return {"statement": "MSP Spend(20), SHA-256 edition, v1", "input_bytes": INPUT_BYTES,
+    return {"statement": f"MSP Spend(20), {EDITION} edition, v1", "input_bytes": INPUT_BYTES,
             "seed": seed, "rules": list(RULES), "cases": cases}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--hash", choices=("sha256", "blake2s"), default="sha256")
     sub = parser.add_subparsers(dest="command", required=True)
     for command in ("write", "check"):
         p = sub.add_parser(command)
@@ -421,6 +430,9 @@ def main() -> int:
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--count", type=int, default=16)
     args = parser.parse_args()
+    global HASH, EDITION
+    if args.hash == "blake2s":
+        HASH, EDITION = hashlib.blake2s, "BLAKE2s"
     if args.command == "hidden":
         args.path.write_text(json.dumps(hidden(args.seed, args.count), indent=1) + "\n")
         return 0

@@ -28,6 +28,15 @@
    "witness_log_size": 26,
    "bytecode_bytes": 1789
   },
+  "bytecode": {
+   "cases": 68,
+   "max_cycles": 615971,
+   "min_cycles": 615949,
+   "failures": [],
+   "padded_cycles": 983496,
+   "witness_log_size": 26,
+   "bytecode_bytes": 1935
+  },
   "evm-calls-55": {
    "cases": 56,
    "max_cycles": 561959,
@@ -64,11 +73,20 @@
  "cycles_over_reference": {
   "solidity": 2.662,
   "yul": 1.359,
+  "bytecode": 1.338,
   "evm-calls-55": 1.22
  },
  "cycles_over_sha256_only_control": {
   "solidity": 2.697,
-  "yul": 1.377
+  "yul": 1.377,
+  "bytecode": 1.356
+ },
+ "gas_used": {
+  "solidity": 41075,
+  "yul": 14658,
+  "bytecode": 14559,
+  "evm-calls-55": 12270,
+  "evm-calls-0": 85
  },
  "breakdown": {
   "sha256": 447399,
@@ -78,16 +96,19 @@
   "evm_start_up": 6435,
   "bytecode_outside_calls": {
    "solidity": 663651,
-   "yul": 63762
+   "yul": 63762,
+   "bytecode": 54012
   },
   "bytecode_outside_calls_per_call": {
    "solidity": 12066.4,
-   "yul": 1159.3
+   "yul": 1159.3,
+   "bytecode": 982.0
   },
   "riscv_outside_sha256": 13072,
   "extra_over_reference": {
    "solidity": 765139,
-   "yul": 165250
+   "yul": 165250,
+   "bytecode": 155500
   }
  },
  "evm_instructions_transfer": {
@@ -116,6 +137,19 @@
     "other": 1
    },
    "peak_evm_memory_bytes": 544
+  },
+  "bytecode": {
+   "total": 1242,
+   "by_kind": {
+    "stack": 813,
+    "arithmetic_and_comparisons": 211,
+    "jumps": 15,
+    "memory": 23,
+    "calldata": 69,
+    "calls": 110,
+    "other": 1
+   },
+   "peak_evm_memory_bytes": 800
   },
   "evm-calls-55": {
    "total": 616,
@@ -151,7 +185,9 @@
    "solidity": 778211,
    "solidity_over_riscv": 59.53,
    "yul": 178322,
-   "yul_over_riscv": 13.64
+   "yul_over_riscv": 13.64,
+   "bytecode": 168572,
+   "bytecode_over_riscv": 12.9
   },
   {
    "cycles_per_compression": 200,
@@ -159,7 +195,9 @@
    "solidity": 799211,
    "solidity_over_riscv": 23.46,
    "yul": 199322,
-   "yul_over_riscv": 5.85
+   "yul_over_riscv": 5.85,
+   "bytecode": 189572,
+   "bytecode_over_riscv": 5.56
   },
   {
    "cycles_per_compression": 800,
@@ -167,7 +205,9 @@
    "solidity": 862211,
    "solidity_over_riscv": 8.88,
    "yul": 262322,
-   "yul_over_riscv": 2.7
+   "yul_over_riscv": 2.7,
+   "bytecode": 252572,
+   "bytecode_over_riscv": 2.6
   }
  ],
  "proving": {
@@ -361,7 +401,8 @@
    "rejected_on_leanvm": {
     "riscv": true,
     "solidity": true,
-    "yul": true
+    "yul": true,
+    "bytecode": true
    }
   },
   "hidden_seeds": {
@@ -373,6 +414,10 @@
     "yul": [
      303,
      404
+    ],
+    "bytecode": [
+     505,
+     606
     ]
    },
    "checked": [
@@ -384,7 +429,8 @@
   },
   "rule_removal_caught": {
    "solidity": "11 of 11",
-   "yul": "11 of 11"
+   "yul": "11 of 11",
+   "bytecode": "11 of 11"
   },
   "constant_padded_trace": true
  },
@@ -397,6 +443,8 @@
   "evm/baseline.hex": "9ff634a95b430539aebe27f1f22fdbf884db80ea5ef83db4531a5e23e79521a6",
   "evm/yul/generate.py": "482c0caed86f24392272531a28beaf473a33835973774c94355d90351999cb95",
   "evm/yul/bytecode.hex": "f36a49a0fbdb104383849b9fd02dcdb825af6d2b429d92e09eb5b1bac080dbcc",
+  "evm/bytecode/generate.py": "8301761c514f8cd357d935c480158a91055fa2803c8ea3b12e755084f5ee4d08",
+  "evm/bytecode/bytecode.hex": "8318a1e09661ba4aa0fcd4476f38d2c977149161610509936ab8c68b85040759",
   "evm/controls/calls-55.hex": "4d42f7af2bf3fee14a92b242e7412b32e6c6f0a2903020ba614a1cb116520362",
   "evm/controls/calls-0.hex": "b3010650931fb319f8922616394edf0e9ba658d2fc29f04d3711f256ef73f30e",
   "timed_elfs": {

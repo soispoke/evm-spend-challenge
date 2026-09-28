@@ -1,0 +1,230 @@
+{
+ "statement": "MSP Spend(20), BLAKE2s edition, v1",
+ "precompile": "hypothetical BLAKE2s-256 at 0xb2, priced like SHA-256 (60 plus 12 per word)",
+ "cases": "public BLAKE2s cases and hidden seeds 1 and 2, invalid cases included",
+ "gas_used": {
+  "precompile": 14559,
+  "blake2s-in-evm": 2752716
+ },
+ "checks": {
+  "oracle_and_rust": "all cases",
+  "parity_cases": 177,
+  "fuzz_programs": 600000
+ },
+ "programs": {
+  "riscv-base": {
+   "max_cycles": 344072,
+   "min_cycles": 343949,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    491608
+   ],
+   "witness_log_size": [
+    25
+   ],
+   "committed_words": [
+    22020096
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.379,
+   "timed_proofs": 4,
+   "over_riscv_base": 1.0,
+   "over_riscv_instruction": 6.53
+  },
+  "riscv-blake2s-instruction": {
+   "max_cycles": 52676,
+   "min_cycles": 52553,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    92560
+   ],
+   "witness_log_size": [
+    23
+   ],
+   "committed_words": [
+    5242880
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.085,
+   "timed_proofs": 4,
+   "over_riscv_base": 0.15,
+   "over_riscv_instruction": 1.0
+  },
+  "evm-precompile-software-revm": {
+   "max_cycles": 494144,
+   "min_cycles": 494122,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    852296
+   ],
+   "witness_log_size": [
+    26
+   ],
+   "committed_words": [
+    37748736
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.773,
+   "timed_proofs": 4,
+   "over_riscv_base": 1.44,
+   "over_riscv_instruction": 9.38
+  },
+  "evm-precompile-instruction-revm": {
+   "max_cycles": 202548,
+   "min_cycles": 202526,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    246336
+   ],
+   "witness_log_size": [
+    24
+   ],
+   "committed_words": [
+    12058624
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.245,
+   "timed_proofs": 4,
+   "over_riscv_base": 0.59,
+   "over_riscv_instruction": 3.85
+  },
+  "evm-precompile-software-fast": {
+   "max_cycles": 394661,
+   "min_cycles": 394639,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    491552
+   ],
+   "witness_log_size": [
+    25
+   ],
+   "committed_words": [
+    22020096
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.487,
+   "timed_proofs": 4,
+   "over_riscv_base": 1.15,
+   "over_riscv_instruction": 7.49
+  },
+  "evm-precompile-instruction-fast": {
+   "max_cycles": 103065,
+   "min_cycles": 103043,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    172304
+   ],
+   "witness_log_size": [
+    24
+   ],
+   "committed_words": [
+    8650752
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.197,
+   "timed_proofs": 4,
+   "over_riscv_base": 0.3,
+   "over_riscv_instruction": 1.96
+  },
+  "evm-precompile-software-compiled": {
+   "max_cycles": 349442,
+   "min_cycles": 349422,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    491552
+   ],
+   "witness_log_size": [
+    25
+   ],
+   "committed_words": [
+    22020096
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.465,
+   "timed_proofs": 4,
+   "over_riscv_base": 1.02,
+   "over_riscv_instruction": 6.63
+  },
+  "evm-precompile-instruction-compiled": {
+   "max_cycles": 57846,
+   "min_cycles": 57826,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    98576
+   ],
+   "witness_log_size": [
+    23
+   ],
+   "committed_words": [
+    5505024
+   ],
+   "provable_at_pinned_size_bound": true,
+   "median_proof_s": 0.108,
+   "timed_proofs": 4,
+   "over_riscv_base": 0.17,
+   "over_riscv_instruction": 1.1
+  },
+  "evm-in-evm-revm": {
+   "max_cycles": 76776443,
+   "min_cycles": 76776419,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    117443608
+   ],
+   "witness_log_size": [
+    33
+   ],
+   "committed_words": [
+    5100273664
+   ],
+   "provable_at_pinned_size_bound": false,
+   "over_riscv_base": 223.14,
+   "over_riscv_instruction": 1457.52
+  },
+  "evm-in-evm-fast": {
+   "max_cycles": 56136848,
+   "min_cycles": 56136824,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    75500560
+   ],
+   "witness_log_size": [
+    32
+   ],
+   "committed_words": [
+    3221225472
+   ],
+   "provable_at_pinned_size_bound": false,
+   "over_riscv_base": 163.15,
+   "over_riscv_instruction": 1065.7
+  },
+  "evm-in-evm-compiled": {
+   "max_cycles": 5844806,
+   "min_cycles": 5844783,
+   "valid_cases": 60,
+   "invalid_rejected": 108,
+   "padded_cycles": [
+    8456208
+   ],
+   "witness_log_size": [
+    29
+   ],
+   "committed_words": [
+    369098752
+   ],
+   "provable_at_pinned_size_bound": false,
+   "over_riscv_base": 16.99,
+   "over_riscv_instruction": 110.96
+  }
+ }
+}

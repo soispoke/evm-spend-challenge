@@ -1,0 +1,30 @@
+{
+ "all_match": true,
+ "programs": [
+  {
+   "mismatches": [],
+   "program": "solidity",
+   "runs": 1480
+  },
+  {
+   "mismatches": [],
+   "program": "yul",
+   "runs": 1480
+  },
+  {
+   "mismatches": [],
+   "program": "bytecode",
+   "runs": 1480
+  },
+  {
+   "mismatches": [],
+   "program": "calls_55",
+   "runs": 1480
+  },
+  {
+   "mismatches": [],
+   "program": "calls_0",
+   "runs": 1480
+  }
+ ]
+}

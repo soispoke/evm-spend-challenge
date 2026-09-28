@@ -4,10 +4,38 @@
 //! `verify` is the direct RISC-V side of the comparison and the Rust twin of
 //! `oracle/spend_sha256.py`. It returns the 32-byte statement digest or the
 //! violated rule. Checks on private data avoid short-circuit evaluation, so
-//! every valid input executes the same instruction sequence.
+//! every valid input executes the same instruction sequence. `verify_with`
+//! checks the same statement with another hash: the BLAKE2s edition uses
+//! BLAKE2s-256 for every hash and changes nothing else.
 #![no_std]
 
 use sha2::{Digest, Sha256};
+
+pub mod blake2s;
+
+/// The hash every message of the statement goes through.
+pub trait StatementHash {
+    fn digest(message: &[u8]) -> [u8; 32];
+}
+
+/// SHA-256, the challenge's hash.
+pub struct Sha256Hash;
+
+impl StatementHash for Sha256Hash {
+    fn digest(message: &[u8]) -> [u8; 32] {
+        digest(message)
+    }
+}
+
+/// BLAKE2s-256 in software, for the BLAKE2s edition.
+pub struct Blake2sHash;
+
+impl StatementHash for Blake2sHash {
+    #[inline(always)]
+    fn digest(message: &[u8]) -> [u8; 32] {
+        blake2s::hash(message)
+    }
+}
 
 pub const DEPTH: usize = 20;
 pub const INPUT_BYTES: usize = 1680;
@@ -89,26 +117,26 @@ fn same<const N: usize>(a: &[u8; N], b: &[u8; N]) -> bool {
 }
 
 /// H(tag || a || b) for two 32-byte words: 65 bytes, two SHA-256 compressions.
-fn hash2(tag: u8, a: &[u8; 32], b: &[u8; 32]) -> [u8; 32] {
+fn hash2<H: StatementHash>(tag: u8, a: &[u8; 32], b: &[u8; 32]) -> [u8; 32] {
     let mut message = [0u8; 65];
     message[0] = tag;
     message[1..33].copy_from_slice(a);
     message[33..65].copy_from_slice(b);
-    digest(&message)
+    H::digest(&message)
 }
 
 /// H(tag || word || tail) for a short fixed tail; one compression.
-fn hash_tail<const N: usize>(tag: u8, a: &[u8; 32], tail: [u8; N]) -> [u8; 32] {
+fn hash_tail<H: StatementHash, const N: usize>(tag: u8, a: &[u8; 32], tail: [u8; N]) -> [u8; 32] {
     let mut message = [0u8; 65];
     message[0] = tag;
     message[1..33].copy_from_slice(a);
     message[33..33 + N].copy_from_slice(&tail);
-    digest(&message[..33 + N])
+    H::digest(&message[..33 + N])
 }
 
 /// Merkle step with the current node on the right exactly when `bit` is 1,
 /// chosen by masking rather than by branching on the private bit.
-fn node(current: &[u8; 32], sibling: &[u8; 32], bit: u32) -> [u8; 32] {
+fn node<H: StatementHash>(current: &[u8; 32], sibling: &[u8; 32], bit: u32) -> [u8; 32] {
     let mask = 0u8.wrapping_sub(bit as u8);
     let mut message = [0u8; 65];
     message[0] = TAG_NODE;
@@ -117,11 +145,18 @@ fn node(current: &[u8; 32], sibling: &[u8; 32], bit: u32) -> [u8; 32] {
         message[1 + i] = current[i] ^ swap;
         message[33 + i] = sibling[i] ^ swap;
     }
-    digest(&message)
+    H::digest(&message)
 }
 
 /// Check the statement and return its digest.
 pub fn verify(input: &[u8]) -> Result<[u8; 32], Rule> {
+    verify_with::<Sha256Hash>(input)
+}
+
+/// Check the statement with `H` as its hash. Inlined so that `verify` compiles
+/// to the same code as before the hash became a parameter.
+#[inline(always)]
+pub fn verify_with<H: StatementHash>(input: &[u8]) -> Result<[u8; 32], Rule> {
     if input.len() != INPUT_BYTES {
         return Err(Rule::Length);
     }
@@ -146,21 +181,21 @@ pub fn verify(input: &[u8]) -> Result<[u8; 32], Rule> {
         let mut owner_message = [0u8; 33];
         owner_message[0] = TAG_PK;
         owner_message[1..].copy_from_slice(&spend_key);
-        let owner = digest(&owner_message);
-        let inner = hash2(TAG_INNER, &owner, &rho);
-        let commitment = hash_tail(TAG_COMMIT, &inner, value.to_be_bytes());
+        let owner = H::digest(&owner_message);
+        let inner = hash2::<H>(TAG_INNER, &owner, &rho);
+        let commitment = hash_tail::<H, 16>(TAG_COMMIT, &inner, value.to_be_bytes());
         let mut current = commitment;
         for level in 0..DEPTH {
             let sibling = word(input, at + 84 + 32 * level);
-            current = node(&current, &sibling, (index >> level) & 1);
+            current = node::<H>(&current, &sibling, (index >> level) & 1);
         }
         // Dummy inputs carry zero value and need not be members.
         if !(same(&current, &root) | (value == 0)) {
             return Err(Rule::Membership);
         }
-        let occurrence = hash_tail(TAG_OCC, &commitment, index.to_be_bytes());
-        let nullifier_key = hash2(TAG_NK, &domain, &spend_key);
-        nullifiers[k] = hash2(TAG_NULL, &nullifier_key, &occurrence);
+        let occurrence = hash_tail::<H, 4>(TAG_OCC, &commitment, index.to_be_bytes());
+        let nullifier_key = hash2::<H>(TAG_NK, &domain, &spend_key);
+        nullifiers[k] = hash2::<H>(TAG_NULL, &nullifier_key, &occurrence);
         values[k] = value;
     }
 
@@ -177,7 +212,7 @@ pub fn verify(input: &[u8]) -> Result<[u8; 32], Rule> {
         if !((value == 0) | !is_sink) {
             return Err(Rule::PositiveOutputNotSink);
         }
-        commitments[k] = hash_tail(TAG_COMMIT, &inner, value.to_be_bytes());
+        commitments[k] = hash_tail::<H, 16>(TAG_COMMIT, &inner, value.to_be_bytes());
         outputs[k] = value;
     }
 
@@ -222,7 +257,7 @@ pub fn verify(input: &[u8]) -> Result<[u8; 32], Rule> {
     statement[209..225].copy_from_slice(&fee.to_be_bytes());
     statement[225..245].copy_from_slice(&recipient);
     statement[245..265].copy_from_slice(&authorizer);
-    Ok(digest(&statement))
+    Ok(H::digest(&statement))
 }
 
 /// Message lengths of the statement's 55 SHA-256 calls: per input the owner

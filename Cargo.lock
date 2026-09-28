@@ -1106,6 +1106,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "spend-evm-engine",
+ "spend-evm-interpreters",
  "spend-sha256",
 ]
 
@@ -1119,6 +1120,16 @@ dependencies = [
  "portable-atomic",
  "revm-interpreter",
  "sha2",
+]
+
+[[package]]
+name = "spend-evm-interpreters"
+version = "0.1.0"
+dependencies = [
+ "revm-interpreter",
+ "sha2",
+ "spend-evm-engine",
+ "spend-sha256",
 ]
 
 [[package]]

@@ -1,0 +1,24 @@
+[package]
+name = "spend-evm-variants-guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spend-runtime = { path = "../runtime" }
+spend-evm-interpreters = { path = "../../interpreters" }
+
+[[bin]]
+name = "spend-evm-revm-direct"
+path = "src/revm_direct.rs"
+
+[[bin]]
+name = "spend-evm-fast"
+path = "src/fast.rs"
+
+[[bin]]
+name = "spend-evm-compiled"
+path = "src/compiled.rs"
+
+[[bin]]
+name = "spend-evm-reference"
+path = "src/reference.rs"
