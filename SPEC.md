@@ -2,11 +2,11 @@
 
 ## TL;DR
 
-Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cycles. Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules; under EIP-8288 those rules could be a program proved by a zkVM. This challenge measures that program's cost when it is EVM bytecode run by an interpreter, against the same program compiled directly to RISC-V, on a fixed version of leanVM. The Solidity baseline takes 1,225,610 cycles, 2.66 times the RISC-V reference, an optimized Yul entry takes 625,721 (1.36 times) and a hand-written bytecode entry 615,971 (1.34 times). Most of what remains is the fixed interpreter's cost: run by an interpreter written for proving, the hand-written entry takes 1.10 times, and compiled ahead of time 1.00 times. The result informs whether applications under EIP-8288 can keep their proved programs in EVM bytecode or should be able to use RISC-V directly.
+Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cycles. Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules; under EIP-8288 those rules could be a program proved by a zkVM. This challenge measures that program's cost when it is EVM bytecode executed by an EVM interpreter, against the same check as a RISC-V program compiled from Rust, on a fixed version of leanVM. The Solidity baseline takes 1,225,610 cycles, 2.66 times the RISC-V reference, an optimized Yul entry takes 625,721 (1.36 times) and a hand-written bytecode entry 615,971 (1.34 times). Most of what remains is the fixed interpreter's cost: executed by an interpreter written for proving, the hand-written entry takes 1.10 times, and compiled ahead of time 1.00 times. The result informs whether applications under EIP-8288 can keep their proved programs in EVM bytecode or should be able to use RISC-V directly.
 
 ## The question
 
-EIP-8288 lets transactions carry proofs that Ethereum verifies. A privacy application's proof shows that a program accepted a spend: the program reads the private data (keys, notes, Merkle paths) and the public values, checks the pool's rules, and outputs a hash of the public values. If that program costs about as much to prove as EVM bytecode as it does compiled to RISC-V, applications could keep writing it in EVM bytecode, which weakens the performance case for letting them use RISC-V directly. Letting entrants optimize the EVM version measures the best achievable cost rather than the cost of one implementation.
+EIP-8288 lets transactions carry proofs that Ethereum verifies. A privacy application's proof shows that a program accepted a spend: the program reads the private data (keys, notes, Merkle paths) and the public values, checks the pool's rules, and outputs a hash of the public values. If that program costs about as much to prove as EVM bytecode as it does compiled to RISC-V, applications could keep writing it in EVM bytecode, which weakens the performance case for letting them use RISC-V directly. Letting entrants optimize the EVM program measures the best achievable cost rather than the cost of one implementation.
 
 SHA-256 is the only hash, because the EVM already provides it as precompile `0x02`. No new precompile is assumed, and a precompile for another hash would be called the same way.
 
@@ -96,7 +96,7 @@ An entry changes only its bytecode. The rest is fixed:
 - **Interpreter:** `revm-interpreter` 43.0.0 with Cancun rules, a 30 million gas limit and a 1 MiB memory limit, patched only to build for RV64IM ([patches](engine/vendor/README.md)). It is fixed so that entries compete on their bytecode; faster interpreters are measured separately in [RESULTS.md](RESULTS.md#faster-interpreters) and do not change the score.
 - **External calls:** only `STATICCALL` to the SHA-256 precompile at `0x02`, charged mainnet gas (60 plus 12 per 32-byte word) and computed with the same `sha2` 0.10.9 code as the RISC-V reference. Storage, logs, environment reads, value transfers and contract creation are rejected.
 - **Machine:** leanVM, `riscv-exploration` branch at [`1096dedf`](https://github.com/leanEthereum/leanVM/tree/1096dedfbe29c72cfff2a2d8d8b420e6ff0d9f2d), RV64IM, with the [guest runtime](guests/runtime/src/lib.rs) and Rust `nightly-2026-09-17`.
-- **Hashing:** software only on both sides, with no zkVM accelerator or custom instruction.
+- **Hashing:** base RV64IM instructions only on both sides, with no custom hash instruction.
 
 ## Reference results
 
