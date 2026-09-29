@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EVM Spend Challenge</title>
 <style>
-/* Layout: one reading column. The results chart is a set of small multiples on one shared
-   scale, so bar lengths compare within and across hash setups. Palette: ethereum.org purple
-   and cool neutrals, as in the vault's design system. */
+/* Layout: one reading column. Key results are tiles that open views of an explorer below;
+   the explorer's bars share one scale per view, with the baseline drawn as a dashed line.
+   Palette: ethereum.org purple and cool neutrals, as in the vault's design system. */
 :root {
   --bg: #FFFFFF;
   --bg-soft: #F7F7F9;
@@ -20,10 +20,15 @@
   --accent: #6C24DF;
   --accent-soft: #F2EAFE;
   --on-accent: #FFFFFF;
+  --good: #0E8074;
   --bar-riscv: #57565F;
   --bar-compiled: #C9ADF7;
   --bar-fast: #8B4FEF;
   --bar-revm: #4A1795;
+  --pill-sha-bg: #E8F1FF;
+  --pill-sha-ink: #1F3FAF;
+  --pill-b2-bg: #DDF5F1;
+  --pill-b2-ink: #0B6B61;
   --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -41,10 +46,15 @@
     --accent: #B38DF0;
     --accent-soft: #261C3A;
     --on-accent: #111014;
+    --good: #3FC1B3;
     --bar-riscv: #A9A8B3;
     --bar-compiled: #553A8C;
     --bar-fast: #8F55EF;
     --bar-revm: #CCAFFC;
+    --pill-sha-bg: #1C2742;
+    --pill-sha-ink: #A9C2FF;
+    --pill-b2-bg: #12332F;
+    --pill-b2-ink: #7ED9CD;
   }
 }
 :root[data-theme="dark"] {
@@ -60,10 +70,15 @@
   --accent: #B38DF0;
   --accent-soft: #261C3A;
   --on-accent: #111014;
+  --good: #3FC1B3;
   --bar-riscv: #A9A8B3;
   --bar-compiled: #553A8C;
   --bar-fast: #8F55EF;
   --bar-revm: #CCAFFC;
+  --pill-sha-bg: #1C2742;
+  --pill-sha-ink: #A9C2FF;
+  --pill-b2-bg: #12332F;
+  --pill-b2-ink: #7ED9CD;
 }
 
 * { box-sizing: border-box; }
@@ -75,7 +90,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .page {
-  max-width: 820px;
+  max-width: 860px;
   margin: 0 auto;
   padding-inline: 20px;
   padding-block: 40px 56px;
@@ -86,14 +101,15 @@ section, header { display: grid; gap: 14px; min-width: 0; }
 h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
 h1 { font-size: 36px; line-height: 1.15; font-weight: 750; }
 h2 { font-size: 22px; line-height: 1.3; font-weight: 700; }
-h3 { font-size: 16px; line-height: 1.35; font-weight: 650; }
+h3 { font-size: 17px; line-height: 1.35; font-weight: 650; }
 p { margin: 0; max-width: 68ch; }
 a { color: var(--link); text-underline-offset: 3px; }
 code { font-family: var(--mono); font-size: 0.88em; }
+button { font: inherit; color: inherit; }
 .meta { font-size: 14px; color: var(--ink-3); }
 .lead { font-size: 18px; line-height: 1.55; }
 .note { font-size: 14px; color: var(--ink-2); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 /* Setup diagram */
 .routes { display: grid; gap: 10px; }
@@ -105,38 +121,80 @@ code { font-family: var(--mono); font-size: 0.88em; }
 .arrow::before { content: "\2192"; }
 
 /* Key results */
-ul.results { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 68ch; }
+.insights { display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 12px; }
+.insight {
+  display: grid; align-content: start; gap: 4px; text-align: left; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--line-strong); border-radius: 12px; padding: 14px 16px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.insight:hover { border-color: var(--accent); }
+.insight[aria-pressed="true"] { border: 2px solid var(--accent); padding: 13px 15px; background: var(--accent-soft); }
+.insight-num { font-size: 30px; line-height: 1.1; font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.insight-title { font-size: 15px; font-weight: 650; }
+.insight-text { font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
 
-/* Chart */
-.chart { border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); padding: 18px; display: grid; gap: 22px; min-width: 0; }
-.chart-top { display: grid; gap: 14px; }
-.toggle { display: inline-flex; justify-self: start; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-.toggle button { font: 500 14px/1.2 var(--sans); color: var(--ink); background: var(--bg); border: 0; padding: 8px 14px; cursor: pointer; }
-.toggle button + button { border-left: 1px solid var(--line-strong); }
-.toggle button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+/* Explorer */
+.explorer { border: 1px solid var(--line); border-radius: 14px; background: var(--bg-soft); padding: 20px; display: grid; gap: 18px; min-width: 0; scroll-margin-top: 16px; }
+.view-head { display: grid; gap: 4px; }
+.view-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.view-count { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.view-head p { font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+.filters { display: grid; gap: 10px; }
+.filter { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; align-items: start; }
+.filter-name { font-size: 13px; font-weight: 600; color: var(--ink-2); padding-top: 6px; }
+.filter.is-off { opacity: 0.45; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: 13px; line-height: 1.2; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--line-strong);
+}
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.chip:disabled { cursor: default; }
+.chip.plain { border-style: dashed; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 9px; overflow: hidden; background: var(--bg); }
+.seg button { font-size: 14px; font-weight: 500; line-height: 1.2; padding: 8px 16px; border: 0; background: transparent; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg.small button { font-size: 13px; padding: 6px 12px; }
+.hint { font-size: 13px; color: var(--ink-3); }
+
+.chart { display: grid; gap: 2px; min-width: 0; }
+.axis, .prow { display: grid; grid-template-columns: 250px minmax(0, 1fr) 150px; column-gap: 14px; align-items: center; }
+.axis { padding-inline: 9px; font: 12px/1 var(--mono); color: var(--ink-3); margin-bottom: 2px; }
+.axis-track { position: relative; height: 14px; }
+.axis-track span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.prow {
+  width: 100%; text-align: left; cursor: pointer; padding: 7px 8px; border-radius: 9px;
+  background: transparent; border: 1px solid transparent;
+}
+.prow:hover { background: var(--bg); }
+.prow.is-base { background: var(--bg); border-color: var(--accent); }
+.plabel { display: grid; gap: 2px; min-width: 0; }
+.plabel b { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.plabel small { font-size: 12.5px; line-height: 1.35; color: var(--ink-3); }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; line-height: 1; padding: 3px 6px; border-radius: 5px; margin-right: 5px; vertical-align: 1px; }
+.pill.sha { background: var(--pill-sha-bg); color: var(--pill-sha-ink); }
+.pill.b2 { background: var(--pill-b2-bg); color: var(--pill-b2-ink); }
+.track { position: relative; height: 24px; }
+.gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.base-mark { position: absolute; top: -8px; bottom: -8px; border-left: 2px dashed var(--accent); opacity: 0.7; }
+.bar { position: absolute; left: 0; top: 4px; bottom: 4px; border-radius: 3px; min-width: 3px; transition: width 220ms ease; }
+.pval { display: grid; justify-items: end; gap: 1px; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pval .main { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+.pval .main span { color: var(--ink-2); }
+.pval .ratio { font-weight: 650; color: var(--ink); }
+.pval .ratio.good { color: var(--good); }
+.pval .ratio.even { color: var(--ink-3); }
+.pval .tag { font: 700 11px/1 var(--sans); letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); }
+.pval .sub { font-size: 12px; color: var(--ink-3); }
+.pval .none { font-size: 13px; color: var(--ink-3); }
+.empty { display: grid; gap: 10px; justify-items: start; padding: 16px 9px; color: var(--ink-2); font-size: 14px; }
 .legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; font-size: 13px; line-height: 1.4; color: var(--ink-2); }
 .legend > div { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 8px; }
 .legend b { color: var(--ink); font-weight: 600; }
 .swatch { width: 12px; height: 12px; border-radius: 2px; margin-top: 3px; }
-.groups { display: grid; gap: 22px; }
-.group { display: grid; gap: 6px; }
-.group-head { display: grid; gap: 2px; margin-bottom: 4px; }
-.group-head p { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
-.row, .axis { display: grid; grid-template-columns: 210px minmax(0, 1fr) 132px; gap: 10px; align-items: center; }
-.row { font-size: 14px; }
-.row-label { color: var(--ink-2); line-height: 1.3; }
-.track { position: relative; height: 22px; }
-.gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
-.bar { position: absolute; left: 0; top: 3px; bottom: 3px; border-radius: 3px; min-width: 2px; transition: width 200ms ease; }
-.bar.off-scale::after { content: ""; position: absolute; right: 12px; top: -4px; bottom: -4px; width: 5px; background: var(--bg-soft); transform: skewX(-20deg); }
-.value { display: flex; justify-content: flex-end; gap: 8px; font: 500 13px/1.2 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.value span { color: var(--ink-3); }
-.value b { font-weight: 650; color: var(--ink); }
-.none { font-size: 13px; color: var(--ink-3); }
-.axis { font: 12px/1 var(--mono); color: var(--ink-3); }
-.axis-track { position: relative; height: 14px; }
-.axis-track span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
-.axis-track span:first-child { transform: none; }
 
 /* Tables */
 .table-wrap { overflow-x: auto; }
@@ -155,15 +213,17 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
   .lane-name { padding-top: 6px; }
   .arrow { height: 16px; }
   .arrow::before { content: "\2193"; }
-  .chart { padding: 14px; }
-  .legend { grid-template-columns: 1fr; }
-  .row, .axis { grid-template-columns: minmax(0, 1fr) 118px; row-gap: 2px; }
-  .row-label { grid-column: 1 / -1; }
+  .explorer { padding: 14px; }
+  .filter { grid-template-columns: 1fr; gap: 6px; }
+  .filter-name { padding-top: 0; }
+  .axis, .prow { grid-template-columns: minmax(0, 1fr) 124px; row-gap: 4px; }
+  .plabel { grid-column: 1 / -1; }
   .axis > :first-child { display: none; }
+  .legend { grid-template-columns: 1fr; }
   th, td { padding: 8px 7px; }
   table { font-size: 14px; }
 }
-@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bar, .insight { transition: none; } }
 </style>
 
 <main class="page">
@@ -194,41 +254,81 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
       <div class="box">Proved by leanVM</div>
     </div>
   </div>
-  <p>The spend follows the minimal shielded pool's rules: two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee. Checking it takes 55 hash calls, 105 compressions. On RISC-V the hash is Rust code or leanVM's <code>blake2s</code> instruction. The EVM version calls a precompile, which the interpreter serves with the same code or instruction.</p>
+  <p>The spend follows the minimal shielded pool's rules: two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee. Checking it takes 55 hash calls, 105 compressions. On RISC-V the hash is Rust code or leanVM's <code>blake2s</code> instruction. The EVM version calls a precompile, which the interpreter serves with the same code or instruction, or computes the hash in EVM code.</p>
 </section>
 
 <section aria-labelledby="results">
   <h2 id="results">Results</h2>
-  <ul class="results">
-    <li>With the hash accelerated on both sides, the interpreter sets the gap: 1.96 times the RISC-V cycles with an interpreter written for proving, 3.85 times with REVM, and 1.10 times with the bytecode compiled ahead of time.</li>
-    <li>With SHA-256 in software on both sides, the gap is only 1.10 to 1.34 times. Hashing takes 97% of the RISC-V cycles, and the EVM version runs the same hashing code.</li>
-    <li>An EVM program that cannot call the accelerated hash is about 10 times slower using SHA-256, and over 100 times slower with the hash written in EVM code.</li>
-    <li>A RISC-V program without the hash instruction takes 3.3 times the cycles of an EVM program whose precompile uses it.</li>
-  </ul>
+  <p class="note">Each result opens its evidence in the explorer below.</p>
+  <div class="insights" role="group" aria-label="Key results">
+    <button type="button" class="insight" data-view="accelerated" aria-pressed="false">
+      <span class="insight-num">1.96×</span>
+      <span class="insight-title">Same accelerated hash</span>
+      <span class="insight-text">EVM against RISC-V when both use leanVM's BLAKE2s instruction, with an interpreter written for proving. REVM: 3.85×.</span>
+    </button>
+    <button type="button" class="insight" data-view="software" aria-pressed="false">
+      <span class="insight-num">1.10×</span>
+      <span class="insight-title">Same software hash</span>
+      <span class="insight-text">With SHA-256 in software on both sides, 97% of the work is the same hashing code. REVM: 1.34×.</span>
+    </button>
+    <button type="button" class="insight" data-view="alignment" aria-pressed="false">
+      <span class="insight-num">9.6×</span>
+      <span class="insight-title">EVM without the accelerated hash</span>
+      <span class="insight-text">An EVM program limited to SHA-256, against RISC-V using the BLAKE2s instruction.</span>
+    </button>
+    <button type="button" class="insight" data-view="noinstr" aria-pressed="false">
+      <span class="insight-num">3.3×</span>
+      <span class="insight-title">RISC-V without the instruction</span>
+      <span class="insight-text">RISC-V limited to base instructions, against an EVM program whose precompile uses the instruction.</span>
+    </button>
+    <button type="button" class="insight" data-view="evmcode" aria-pressed="false">
+      <span class="insight-num">17–223×</span>
+      <span class="insight-title">Hash written in EVM code</span>
+      <span class="insight-text">BLAKE2s as EVM instructions, against RISC-V computing it in software. Too large to prove.</span>
+    </button>
+    <button type="button" class="insight" data-view="gas" aria-pressed="false">
+      <span class="insight-num">4.9×</span>
+      <span class="insight-title">Same gas, different proving cost</span>
+      <span class="insight-text">The hand-written entry uses 14,559 gas whether its hashing takes 504,922 or 103,065 cycles.</span>
+    </button>
+  </div>
 
-  <div class="chart">
-    <div class="chart-top">
-      <div class="toggle" role="group" aria-label="Metric">
-        <button type="button" id="metric-cycles" data-metric="cycles" aria-pressed="true">Cycles</button>
-        <button type="button" id="metric-time" data-metric="time" aria-pressed="false">Proof time</button>
-      </div>
-      <div class="legend">
-        <div><i class="swatch" style="background: var(--bar-riscv)"></i><span><b>RISC-V.</b> The spend in Rust, compiled to RV64IM.</span></div>
-        <div><i class="swatch" style="background: var(--bar-compiled)"></i><span><b>EVM, compiled ahead of time.</b> The bytecode translated to Rust. The floor for any interpreter, but each program becomes its own RISC-V program.</span></div>
-        <div><i class="swatch" style="background: var(--bar-fast)"></i><span><b>EVM, interpreter for proving.</b> Written for this study: one dispatch loop, gas checked only where a program can observe it.</span></div>
-        <div><i class="swatch" style="background: var(--bar-revm)"></i><span><b>EVM, REVM.</b> The Rust EVM used by Reth, not written for proving.</span></div>
-      </div>
-      <div class="axis" aria-hidden="true"><span></span><div class="axis-track" id="axis"></div><span></span></div>
+  <div class="explorer" id="explorer">
+    <div class="view-head">
+      <div class="view-title"><h3 id="view-title"></h3><span class="view-count" id="view-count"></span></div>
+      <p id="view-note"></p>
     </div>
-    <div class="groups" id="groups"></div>
-    <p class="note">Cycles are the largest count over all valid test cases and are exact for these builds. Proof times are medians of four to six proofs of one spend on an Apple M5 Max, without zero knowledge. The SHA-256 and BLAKE2s programs were timed in separate runs, and repeated runs varied by up to 40%. Proof time follows the padded trace, which leanVM rounds up to powers of two table by table, so equal cycle counts can prove at different speeds.</p>
+    <div class="filters" id="filters"></div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Metric">
+        <button type="button" id="metric-cycles" data-metric="cycles">Cycles</button>
+        <button type="button" id="metric-time" data-metric="time">Proof time</button>
+        <button type="button" id="metric-gas" data-metric="gas">Gas</button>
+      </div>
+      <div class="seg small" role="group" aria-label="Scale">
+        <button type="button" id="scale-linear" data-scale="linear">Linear</button>
+        <button type="button" id="scale-log" data-scale="log">Log</button>
+      </div>
+    </div>
+    <div class="chart">
+      <div class="axis" aria-hidden="true"><span></span><div class="axis-track" id="axis"></div><span></span></div>
+      <div id="rows"></div>
+    </div>
+    <p class="hint" id="hint" hidden></p>
+    <div class="legend">
+      <div><i class="swatch" style="background: var(--bar-riscv)"></i><span><b>RISC-V.</b> The spend in Rust, compiled to RV64IM.</span></div>
+      <div><i class="swatch" style="background: var(--bar-compiled)"></i><span><b>EVM, compiled ahead of time.</b> The bytecode translated to Rust: the floor for any interpreter, but each program becomes its own RISC-V program.</span></div>
+      <div><i class="swatch" style="background: var(--bar-fast)"></i><span><b>EVM, interpreter for proving.</b> Written for this study: one dispatch loop, gas checked only where a program can observe it.</span></div>
+      <div><i class="swatch" style="background: var(--bar-revm)"></i><span><b>EVM, REVM.</b> The Rust EVM used by Reth, not written for proving.</span></div>
+    </div>
+    <p class="note">Ratios compare each program with the baseline, drawn as a dashed line; click any row to make it the baseline. Cycles are exact counts, the largest over all valid test cases. Proof times are medians of four to six proofs on an Apple M5 Max without zero knowledge; the SHA-256 and BLAKE2s programs were timed in separate runs, and repeated runs varied by up to 40%. Gas is the same for an entry however its bytecode is run, and RISC-V programs have none.</p>
   </div>
 </section>
 
 <section aria-labelledby="eip">
   <h2 id="eip">What this means for EIP-8288</h2>
   <p><strong>EVM programs are practical when their heavy operations are precompiles that the prover accelerates.</strong> An EVM program then takes about twice the cycles of a RISC-V program using the same instruction when run by an interpreter written for proving, and nearly four times under REVM.</p>
-  <p><strong>One interpreter can prove every EVM program.</strong> The interpreter reads the bytecode as input and hashes it, so each proof states that the program with this bytecode hash, run under a named fork's EVM rules, returned this output. Under the current EIP-8288 draft, a contract would accept the interpreter's verification key hash under the generic leanSTARK scheme, and an immutable contract would be stuck when that key changes. A dedicated scheme, whose fork configuration pins the interpreter and the verifier, lets contracts name their program by fork and bytecode hash instead. A faster interpreter or a new proof system then reaches every contract without changes. The interpreter becomes part of what verifiers trust: any deviation from the EVM rules could let a program accept an input it should reject, so it needs the same review and testing as a verifier.</p>
+  <p><strong>One interpreter can prove every EVM program.</strong> The interpreter reads the bytecode as input and hashes it, so each proof states that the program with this bytecode hash, run under a named fork's EVM rules, returned this output. Under the current EIP-8288 draft, a contract would accept the interpreter's verification key hash under the generic leanSTARK scheme, and an immutable contract would be stuck when that key changes. A dedicated scheme, whose fork configuration pins the interpreter and the verifier, lets contracts name their program by fork and bytecode hash instead. A faster interpreter or a new proof system then reaches every contract without changes. Because the program names its fork, a later fork that adds precompiles or reprices gas does not change what an existing program computes; the interpreter keeps every admitted fork's rules, as execution clients do. The interpreter becomes part of what verifiers trust: any deviation from the EVM rules could let a program accept an input it should reject, so it needs the same review and testing as a verifier.</p>
   <p><strong>The hash has to match.</strong> L1 has SHA-256 (precompile <code>0x02</code>) and Keccak-256 (the <code>KECCAK256</code> opcode). The leanVM version measured here accelerates only BLAKE2s, which L1 lacks. L1's BLAKE2 precompile at <code>0x09</code> computes the BLAKE2b compression, a different function. leanVM's README calls BLAKE2s a placeholder, with SHA-2, SHA-3 and BLAKE3 under consideration. If leanVM settles on BLAKE2s or BLAKE3, L1 needs a precompile for it, added by a hard fork before programs deploy, because a deployed program keeps the hash it was written with. If it settles on SHA-256 or SHA-3, L1 already has a match: <code>0x02</code>, or the <code>KECCAK256</code> opcode, which uses the same Keccak permutation as SHA-3. A precompile also keeps the hash cheap on-chain, where a pool inserts commitments into its Merkle tree; written in EVM code, BLAKE2s costs about 26,000 gas per compression.</p>
   <p><strong>Every other heavy primitive needs the same.</strong> A signature check inside a private account's program, for example, is practical only as an L1 precompile that the prover accelerates. In EVM code, BLAKE2s takes 17 to 223 times the cycles of a RISC-V program computing it in software, because 256-bit EVM instructions emulate its 32-bit arithmetic.</p>
   <p><strong>RISC-V remains the long-term target.</strong> RISC-V programs are faster and can add new primitives in software, without a fork. Proving them directly under EIP-8288 needs one verification key for all of them, with each program bound by its hash the way the interpreter binds bytecode. No RISC-V prover offers that yet. The interpreter is itself a RISC-V program, so EVM programs would keep working once one does.</p>
@@ -263,93 +363,282 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
 
 <script>
 (() => {
-  // Measured on leanVM: [cycles, median proof seconds]. Proof time is null where the
-  // trace exceeds leanVM's size limit of 2^28 words.
-  const SHA = { compiled: [461359, 0.8116], fast: [504922, 0.8815], revm: [615971, 0.9466] };
-  const B2 = { compiled: [57846, 0.1078], fast: [103065, 0.1972], revm: [202548, 0.2455] };
-  const GROUPS = [
-    { title: "SHA-256 in software on both sides",
-      note: "What L1 offers today: the EVM calls SHA-256 at 0x02, and leanVM has no SHA-256 instruction.",
-      riscv: ["RISC-V, SHA-256 in software", 460471, 0.5901], evm: SHA },
-    { title: "BLAKE2s accelerated on both sides",
-      note: "RISC-V uses leanVM's blake2s instruction. The EVM calls a BLAKE2s precompile served by the same instruction; L1 has no such precompile.",
-      riscv: ["RISC-V, blake2s instruction", 52676, 0.0852], evm: B2 },
-    { title: "Only RISC-V accelerated",
-      note: "Without a BLAKE2s precompile, the EVM hashes with SHA-256 at 0x02 in software, while RISC-V uses the instruction.",
-      riscv: ["RISC-V, blake2s instruction", 52676, 0.0852], evm: SHA },
-    { title: "Only the EVM accelerated",
-      note: "RISC-V programs limited to the base RV64IM instructions compute BLAKE2s in software, while the EVM's BLAKE2s precompile uses the instruction.",
-      riscv: ["RISC-V, base instructions", 344072, 0.3789], evm: B2 },
-    { title: "BLAKE2s written in EVM code",
-      note: "With no precompile, the hash runs as EVM instructions. These traces exceed leanVM's size limit, so there are no proofs.",
-      riscv: ["RISC-V, blake2s instruction", 52676, 0.0852],
-      evm: { compiled: [5844806, null], fast: [56136848, null], revm: [76776443, null] } },
+  const RUN = { compiled: "compiled ahead of time", fast: "interpreter for proving", revm: "REVM" };
+  const ENTRY = { hw: "hand-written", yul: "Yul", sol: "Solidity" };
+  const HASH = { "sha-sw": ["sha", "SHA-256"], "b2-sw": ["b2", "BLAKE2s"], "b2-ins": ["b2", "BLAKE2s"], "b2-evm": ["b2", "BLAKE2s"] };
+  const HOW = {
+    riscv: { "sha-sw": "in software", "b2-sw": "in software", "b2-ins": "leanVM instruction" },
+    evm: { "sha-sw": "precompile, software", "b2-sw": "precompile, software", "b2-ins": "precompile, leanVM instruction", "b2-evm": "written in EVM code" },
+  };
+  const COLOR = { riscv: "var(--bar-riscv)", compiled: "var(--bar-compiled)", fast: "var(--bar-fast)", revm: "var(--bar-revm)" };
+
+  // Measured on leanVM: the largest cycle count over the valid cases, the median proof
+  // time in seconds (null where the trace exceeds leanVM's size limit) and gas (null for RISC-V).
+  const DATA = [
+    ["r-sha", "riscv", "sha-sw", null, null, 460471, 0.5901, null],
+    ["r-b2sw", "riscv", "b2-sw", null, null, 344072, 0.3789, null],
+    ["r-b2i", "riscv", "b2-ins", null, null, 52676, 0.0852, null],
+    ["sha-hw-compiled", "evm", "sha-sw", "compiled", "hw", 461359, 0.8116, 14559],
+    ["sha-hw-fast", "evm", "sha-sw", "fast", "hw", 504922, 0.8815, 14559],
+    ["sha-hw-revm", "evm", "sha-sw", "revm", "hw", 615971, 0.9466, 14559],
+    ["sha-yul-compiled", "evm", "sha-sw", "compiled", "yul", 483044, 0.8631, 14658],
+    ["sha-yul-fast", "evm", "sha-sw", "fast", "yul", 520530, 0.8528, 14658],
+    ["sha-yul-revm", "evm", "sha-sw", "revm", "yul", 625721, 0.9221, 14658],
+    ["sha-sol-compiled", "evm", "sha-sw", "compiled", "sol", 605936, 0.9144, 41075],
+    ["sha-sol-fast", "evm", "sha-sw", "fast", "sol", 895279, 1.0043, 41075],
+    ["sha-sol-revm", "evm", "sha-sw", "revm", "sol", 1225610, 1.6851, 41075],
+    ["b2sw-hw-compiled", "evm", "b2-sw", "compiled", "hw", 349442, 0.4654, 14559],
+    ["b2sw-hw-fast", "evm", "b2-sw", "fast", "hw", 394661, 0.4868, 14559],
+    ["b2sw-hw-revm", "evm", "b2-sw", "revm", "hw", 494144, 0.7729, 14559],
+    ["b2i-hw-compiled", "evm", "b2-ins", "compiled", "hw", 57846, 0.1078, 14559],
+    ["b2i-hw-fast", "evm", "b2-ins", "fast", "hw", 103065, 0.1972, 14559],
+    ["b2i-hw-revm", "evm", "b2-ins", "revm", "hw", 202548, 0.2455, 14559],
+    ["b2e-yul-compiled", "evm", "b2-evm", "compiled", "yul", 5844806, null, 2752716],
+    ["b2e-yul-fast", "evm", "b2-evm", "fast", "yul", 56136848, null, 2752716],
+    ["b2e-yul-revm", "evm", "b2-evm", "revm", "yul", 76776443, null, 2752716],
+  ].map(([id, form, hash, run, entry, cycles, time, gas], order) => ({ id, form, hash, run, entry, cycles, time, gas, order }));
+
+  const FILTERS = [
+    { key: "form", name: "Program", options: [["riscv", "RISC-V"], ["evm", "EVM"]] },
+    { key: "hash", name: "Hash", options: [["sha-sw", "SHA-256, software"], ["b2-sw", "BLAKE2s, software"], ["b2-ins", "BLAKE2s, leanVM instruction"], ["b2-evm", "BLAKE2s in EVM code"]] },
+    { key: "run", name: "EVM run by", evm: true, options: [["revm", "REVM"], ["fast", "Interpreter for proving"], ["compiled", "Compiled ahead of time"]] },
+    { key: "entry", name: "EVM entry", evm: true, options: [["hw", "Hand-written"], ["yul", "Yul"], ["sol", "Solidity"]] },
   ];
-  const MODES = [
-    ["compiled", "EVM, compiled ahead of time", "var(--bar-compiled)"],
-    ["fast", "EVM, interpreter for proving", "var(--bar-fast)"],
-    ["revm", "EVM, REVM", "var(--bar-revm)"],
-  ];
-  const AXIS = {
-    cycles: { max: 650000, ticks: [0, 200000, 400000, 600000], label: (v) => v ? v / 1000 + "k" : "0" },
-    time: { max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], label: (v) => v + " s" },
+
+  const VIEWS = {
+    accelerated: { title: "Same accelerated hash", base: "r-b2i", sel: { hash: ["b2-ins"] },
+      note: "RISC-V uses leanVM's blake2s instruction. The EVM calls a BLAKE2s precompile served by the same instruction; L1 has no such precompile. Hashing is cheap, so what remains is the interpreter." },
+    software: { title: "Same software hash", base: "r-sha", sel: { hash: ["sha-sw"], entry: ["hw"] },
+      note: "The challenge's setup: the EVM calls SHA-256 at 0x02, and leanVM has no SHA-256 instruction. Both run the same hashing code, so the interpreter's cost barely shows." },
+    alignment: { title: "EVM without the accelerated hash", base: "r-b2i", sel: { hash: ["sha-sw", "b2-ins"], run: ["fast"], entry: ["hw"] },
+      note: "Both programs with SHA-256 in software or with BLAKE2s through the instruction, the EVM under the interpreter for proving. The EVM is fast only when it can call the hash the prover accelerates." },
+    noinstr: { title: "RISC-V without the instruction", base: "b2i-hw-fast", sel: { hash: ["b2-sw", "b2-ins"], entry: ["hw"] },
+      note: "If RISC-V programs may use only base RV64IM instructions, they compute BLAKE2s in software, while the EVM's precompile can still use the instruction." },
+    evmcode: { title: "Hash written in EVM code", base: "r-b2sw", scale: "log", sel: { hash: ["b2-sw", "b2-evm"], entry: ["yul"] },
+      note: "Without a precompile, BLAKE2s runs as EVM instructions that emulate 32-bit arithmetic. These traces exceed leanVM's proof size limit, so they have no proof times." },
+    gas: { title: "Same gas, different proving cost", base: "b2i-hw-fast", metric: "gas", sel: { form: ["evm"], hash: ["sha-sw", "b2-sw", "b2-ins"], run: ["fast"], entry: ["hw"] },
+      note: "One entry and one interpreter with three hash setups. The gas is identical; the proving cycles behind each unit of gas are not." },
+    all: { title: "All measured programs", base: "r-b2i", scale: "log", sel: {},
+      note: "All 21 measured programs." },
   };
 
-  const cycles = (v) => v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 1 : 2) + " M" : v.toLocaleString("en-US");
-  const seconds = (v) => (v < 0.3 ? v.toFixed(3) : v.toFixed(2)) + " s";
-  const ratio = (r) => (r < 10 ? r.toFixed(2) : r < 100 ? r.toFixed(1) : Math.round(r).toLocaleString("en-US")) + "×";
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const state = { sel: {}, metric: "cycles", scale: "linear", base: "r-b2i", view: "accelerated" };
 
-  const groupsEl = document.getElementById("groups");
-  const axisEl = document.getElementById("axis");
-  const buttons = Array.from(document.querySelectorAll("[data-metric]"));
-  let metric = "cycles";
+  const fmt = {
+    cycles: (v) => v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 1 : 2) + " M" : v.toLocaleString("en-US"),
+    time: (v) => (v < 0.3 ? v.toFixed(3) : v.toFixed(2)) + " s",
+    gas: (v) => v.toLocaleString("en-US"),
+  };
+  const compact = (v) => v >= 1e6 ? +(v / 1e6).toPrecision(3) + "M" : v >= 1e3 ? +(v / 1e3).toPrecision(3) + "k" : String(+v.toPrecision(3));
+  const tickLabel = (v) => v === 0 ? "0" : state.metric === "time" ? +v.toPrecision(2) + " s" : compact(v);
+  const ratioText = (r) => (r < 10 ? r.toFixed(2) : r < 100 ? r.toFixed(1) : Math.round(r).toLocaleString("en-US")) + "×";
 
-  function row(label, color, value, base) {
-    const r = el("div", "row");
-    r.append(el("span", "row-label", label));
-    const track = el("div", "track");
-    track.setAttribute("aria-hidden", "true");
-    const axis = AXIS[metric];
-    axis.ticks.forEach((t) => { const g = el("i", "gridline"); g.style.left = (100 * t / axis.max) + "%"; track.append(g); });
-    const out = el("div", "value");
-    if (value === null) {
-      out.append(el("span", "none", "no proof"));
-    } else {
-      const bar = el("i", "bar" + (value > axis.max ? " off-scale" : ""));
-      bar.style.background = color;
-      bar.style.width = Math.min(100, 100 * value / axis.max) + "%";
-      track.append(bar);
-      out.append(el("span", "", metric === "cycles" ? cycles(value) : seconds(value)));
-      if (base) out.append(el("b", "", ratio(value / base)));
+  // Filter chips, built once.
+  const filtersEl = $("filters");
+  for (const f of FILTERS) {
+    const row = el("div", "filter");
+    row.dataset.key = f.key;
+    const name = el("span", "filter-name", f.name);
+    name.id = "filter-" + f.key;
+    const chips = el("div", "chips");
+    chips.setAttribute("role", "group");
+    chips.setAttribute("aria-labelledby", name.id);
+    for (const [value, label] of f.options) {
+      const chip = el("button", "chip", label);
+      chip.type = "button";
+      chip.dataset.key = f.key;
+      chip.dataset.value = value;
+      chips.append(chip);
     }
-    r.append(track, out);
-    return r;
+    row.append(name, chips);
+    filtersEl.append(row);
+  }
+  const allRow = el("div", "filter");
+  allRow.append(el("span", "filter-name", ""));
+  const allChips = el("div", "chips");
+  const allButton = el("button", "chip plain", "Show all 21 programs");
+  allButton.type = "button";
+  allButton.dataset.view = "all";
+  allChips.append(allButton);
+  allRow.append(allChips);
+  filtersEl.append(allRow);
+
+  function applyView(id, fromUser, scroll) {
+    const v = VIEWS[id];
+    for (const f of FILTERS) state.sel[f.key] = new Set(v.sel[f.key] || f.options.map((o) => o[0]));
+    Object.assign(state, { base: v.base, metric: v.metric || "cycles", scale: v.scale || "linear", view: id });
+    if (fromUser) { try { history.replaceState(null, "", "#v-" + id); } catch (e) { /* not available in every viewer */ } }
+    render();
+    if (scroll) {
+      const top = $("explorer").getBoundingClientRect().top;
+      if (top > window.innerHeight * 0.5 || top < 0) {
+        const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        $("explorer").scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+      }
+    }
+  }
+
+  function visible() {
+    const s = state.sel;
+    return DATA.filter((p) => s.form.has(p.form) && s.hash.has(p.hash) && (p.form === "riscv" || (s.run.has(p.run) && s.entry.has(p.entry))));
+  }
+
+  function scaleFor(values) {
+    const max = Math.max(...values), min = Math.min(...values);
+    if (state.scale === "log") {
+      const lo = min / 1.6, hi = max * 1.15, ticks = [];
+      for (let k = Math.floor(Math.log10(lo)); k <= Math.ceil(Math.log10(hi)); k++) {
+        for (const m of [1, 2, 5]) { const t = m * 10 ** k; if (t >= lo && t <= hi) ticks.push(t); }
+      }
+      const span = Math.log(hi) - Math.log(lo);
+      return { pos: (v) => 100 * (Math.log(v) - Math.log(lo)) / span, ticks };
+    }
+    const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)), n = raw / mag;
+    const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+    const hi = Math.ceil(max / step - 1e-9) * step, ticks = [];
+    for (let i = 0; i * step <= hi * (1 + 1e-9); i++) ticks.push(i * step);
+    return { pos: (v) => 100 * v / hi, ticks };
+  }
+
+  function secondary(p) {
+    if (state.metric === "cycles") return p.time === null ? "no proof" : fmt.time(p.time);
+    if (state.metric === "time") return fmt.cycles(p.cycles) + " cycles";
+    return p.gas === null ? "" : (p.cycles / p.gas).toFixed(1) + " cycles/gas";
+  }
+
+  function rowEl(p, sc, base) {
+    const key = state.metric, value = p[key];
+    const button = el("button", "prow" + (base && p.id === base.id ? " is-base" : ""));
+    button.type = "button";
+    button.dataset.id = p.id;
+    button.title = "Compare the others against this program";
+
+    const label = el("span", "plabel");
+    label.append(el("b", "", p.form === "riscv" ? "RISC-V" : "EVM, " + RUN[p.run]));
+    const sub = el("small");
+    const [pillClass, hashName] = HASH[p.hash];
+    sub.append(el("span", "pill " + pillClass, hashName), p.form === "riscv" ? HOW.riscv[p.hash] : HOW.evm[p.hash] + " · " + ENTRY[p.entry]);
+    label.append(sub);
+
+    const track = el("span", "track");
+    track.setAttribute("aria-hidden", "true");
+    if (sc) {
+      for (const t of sc.ticks) { const g = el("i", "gridline"); g.style.left = sc.pos(t) + "%"; track.append(g); }
+      if (value !== null) {
+        const bar = el("i", "bar");
+        bar.style.background = COLOR[p.form === "riscv" ? "riscv" : p.run];
+        bar.style.width = Math.max(0.6, sc.pos(value)) + "%";
+        track.append(bar);
+      }
+      if (base) { const m = el("i", "base-mark"); m.style.left = sc.pos(base[key]) + "%"; track.append(m); }
+    }
+
+    const out = el("span", "pval");
+    const main = el("span", "main");
+    if (value === null) {
+      main.append(el("span", "none", key === "time" ? "no proof" : "no gas"));
+    } else {
+      main.append(el("span", "", fmt[key](value)));
+      if (base && p.id === base.id) main.append(el("b", "tag", "baseline"));
+      else if (base) {
+        const r = value / base[key];
+        main.append(el("b", "ratio" + (r < 0.995 ? " good" : r <= 1.005 ? " even" : ""), ratioText(r)));
+      }
+    }
+    out.append(main);
+    const extra = secondary(p);
+    if (extra) out.append(el("span", "sub", extra));
+    button.append(label, track, out);
+    return button;
   }
 
   function render() {
-    const i = metric === "cycles" ? 0 : 1;
-    const axis = AXIS[metric];
-    axisEl.replaceChildren(...axis.ticks.map((t) => {
-      const s = el("span", "", axis.label(t));
-      s.style.left = (100 * t / axis.max) + "%";
-      return s;
-    }));
-    groupsEl.replaceChildren(...GROUPS.map((g) => {
-      const box = el("div", "group");
-      const head = el("div", "group-head");
-      head.append(el("h3", "", g.title), el("p", "", g.note));
-      box.append(head);
-      const base = g.riscv[1 + i];
-      box.append(row(g.riscv[0], "var(--bar-riscv)", base, null));
-      MODES.forEach(([key, label, color]) => box.append(row(label, color, g.evm[key][i], base)));
-      return box;
-    }));
-    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.metric === metric)));
+    const view = state.view ? VIEWS[state.view] : null;
+    $("view-title").textContent = view ? view.title : "Custom view";
+    $("view-note").textContent = view ? view.note : "Filter by program, hash, interpreter and entry. Click any row to compare the others against it.";
+    document.querySelectorAll(".insight").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === state.view)));
+    allButton.setAttribute("aria-pressed", String(state.view === "all"));
+    filtersEl.querySelectorAll(".chip[data-key]").forEach((c) => c.setAttribute("aria-pressed", String(state.sel[c.dataset.key].has(c.dataset.value))));
+    const evmOn = state.sel.form.has("evm");
+    filtersEl.querySelectorAll(".filter").forEach((row) => {
+      const f = FILTERS.find((x) => x.key === row.dataset.key);
+      const off = Boolean(f && f.evm && !evmOn);
+      row.classList.toggle("is-off", off);
+      row.querySelectorAll("button").forEach((b) => { b.disabled = off; });
+    });
+    document.querySelectorAll("[data-metric]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.metric === state.metric)));
+    document.querySelectorAll("[data-scale]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.scale === state.scale)));
+
+    const key = state.metric;
+    const rows = visible();
+    const measured = rows.filter((p) => p[key] !== null).sort((a, b) => a[key] - b[key] || a.order - b.order);
+    const list = measured.concat(rows.filter((p) => p[key] === null));
+    const base = measured.find((p) => p.id === state.base) || measured.find((p) => p.form === "riscv") || measured[0] || null;
+    const sc = measured.length ? scaleFor(measured.map((p) => p[key])) : null;
+    $("view-count").textContent = rows.length + " of " + DATA.length + " programs";
+
+    const axis = $("axis");
+    axis.replaceChildren();
+    if (sc) {
+      const width = axis.clientWidth || 400;
+      let last = -Infinity;
+      for (const t of sc.ticks) {
+        const x = sc.pos(t) * width / 100;
+        if (x - last < 46 || x > width + 12) continue;
+        const s = el("span", "", tickLabel(t));
+        s.style.left = sc.pos(t) + "%";
+        if (t === 0) s.style.transform = "none";
+        axis.append(s);
+        last = x;
+      }
+    }
+
+    const rowsEl = $("rows");
+    if (!rows.length) {
+      const empty = el("div", "empty", "No measured program matches these filters. SHA-256 was measured with all three entries; the BLAKE2s edition with the hand-written entry calling a precompile and with a Yul entry computing BLAKE2s in EVM code.");
+      const reset = el("button", "chip plain", "Show all 21 programs");
+      reset.type = "button";
+      reset.dataset.view = "all";
+      empty.append(reset);
+      rowsEl.replaceChildren(empty);
+    } else {
+      rowsEl.replaceChildren(...list.map((p) => rowEl(p, sc, base)));
+    }
+
+    const hint = $("hint");
+    const spread = measured.length ? measured[measured.length - 1][key] / measured[0][key] : 1;
+    hint.hidden = !(state.scale === "linear" && spread > 60);
+    hint.textContent = "Values here span " + ratioText(spread) + ". The log scale shows them all.";
   }
 
-  buttons.forEach((b) => b.addEventListener("click", () => { metric = b.dataset.metric; render(); }));
-  render();
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.view) { applyView(t.dataset.view, true, t.classList.contains("insight")); return; }
+    if (t.dataset.key) {
+      const set = state.sel[t.dataset.key];
+      set.has(t.dataset.value) ? set.delete(t.dataset.value) : set.add(t.dataset.value);
+      state.view = null;
+      render();
+      return;
+    }
+    if (t.dataset.metric) { state.metric = t.dataset.metric; render(); return; }
+    if (t.dataset.scale) { state.scale = t.dataset.scale; render(); return; }
+    if (t.dataset.id) {
+      state.base = t.dataset.id;
+      render();
+      const again = $("rows").querySelector('[data-id="' + t.dataset.id + '"]');
+      if (again) again.focus({ preventScroll: true });
+    }
+  });
+
+  let pending = 0;
+  window.addEventListener("resize", () => { cancelAnimationFrame(pending); pending = requestAnimationFrame(render); });
+
+  const start = location.hash.startsWith("#v-") && VIEWS[location.hash.slice(3)] ? location.hash.slice(3) : "accelerated";
+  applyView(start, false, false);
 })();
 </script>
 </html>
