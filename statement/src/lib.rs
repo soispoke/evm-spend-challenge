@@ -3,8 +3,8 @@
 //!
 //! `verify` is the direct RISC-V side of the comparison and the Rust twin of
 //! `oracle/spend_sha256.py`. It returns the 32-byte statement digest or the
-//! violated rule. Checks on private data avoid short-circuit evaluation, so
-//! every valid input executes the same instruction sequence. `verify_with`
+//! violated rule. Checks on private data avoid explicit short-circuit
+//! evaluation; compiled cycle counts can still vary by input. `verify_with`
 //! checks the same statement with another hash: the BLAKE2s edition uses
 //! BLAKE2s-256 for every hash and changes nothing else.
 #![no_std]

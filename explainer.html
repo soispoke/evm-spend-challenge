@@ -225,6 +225,8 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
 }
 @media (prefers-reduced-motion: reduce) { .bar, .insight { transition: none; } }
 </style>
+</head>
+<body>
 
 <main class="page">
 
@@ -274,7 +276,7 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
     <button type="button" class="insight" data-view="unaligned" aria-pressed="false">
       <span class="insight-num">9.6×</span>
       <span class="insight-title">No BLAKE2s precompile</span>
-      <span class="insight-text">EVM cycles over RISC-V cycles when the EVM program can only call the SHA-256 precompile and the RISC-V program uses the <code>blake2s</code> instruction.</span>
+      <span class="insight-text">EVM cycles over RISC-V cycles in the SHA-256-only benchmark versus the BLAKE2s version using the <code>blake2s</code> instruction. This comparison changes the hash.</span>
     </button>
     <button type="button" class="insight" data-view="riscv-base" aria-pressed="false">
       <span class="insight-num">3.3×</span>
@@ -289,7 +291,7 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
     <button type="button" class="insight" data-view="gas" aria-pressed="false">
       <span class="insight-num">4.9×</span>
       <span class="insight-title">Same gas, different proving cost</span>
-      <span class="insight-text">The hand-written bytecode uses 14,559 gas with the SHA-256 precompile (504,922 cycles) and with the BLAKE2s precompile on the <code>blake2s</code> instruction (103,065 cycles).</span>
+      <span class="insight-text">The hand-written bytecode uses 14,559 gas with SHA-256 (504,922 cycles) and with the hypothetical BLAKE2s precompile on the <code>blake2s</code> instruction (103,065 cycles), priced like SHA-256.</span>
     </button>
   </div>
 
@@ -317,26 +319,26 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
     <p class="hint" id="hint" hidden></p>
     <div class="legend">
       <div><i class="swatch" style="background: var(--bar-riscv)"></i><span><b>RISC-V.</b> The spend check in Rust, compiled to RV64IM.</span></div>
-      <div><i class="swatch" style="background: var(--bar-compiled)"></i><span><b>EVM, compiled ahead of time.</b> The bytecode translated to Rust, then compiled to RV64IM. The lower bound for any interpreter, but each program becomes a separate RISC-V program.</span></div>
-      <div><i class="swatch" style="background: var(--bar-fast)"></i><span><b>EVM, interpreter for proving.</b> An EVM interpreter written for this study to run fast in the zkVM, with the same results and gas as REVM.</span></div>
+      <div><i class="swatch" style="background: var(--bar-compiled)"></i><span><b>EVM, compiled ahead of time.</b> The bytecode translated to Rust, then compiled to RV64IM. Removes dispatch, but is not a proven lower bound. Each program has its own RISC-V image; its correspondence to the bytecode depends on the translator.</span></div>
+      <div><i class="swatch" style="background: var(--bar-fast)"></i><span><b>EVM, interpreter for proving.</b> A restricted EVM interpreter written for this study, matching REVM's results and gas on the tested cases.</span></div>
       <div><i class="swatch" style="background: var(--bar-revm)"></i><span><b>EVM, REVM.</b> The Rust EVM implementation used by Reth, compiled to RV64IM. Not written for proving.</span></div>
     </div>
-    <p class="note">Each ratio divides a program's value by the baseline's, drawn as a dashed line; click any row to make it the baseline. Cycles count the instructions leanVM executes, the largest count over all valid test cases; a <code>blake2s</code> instruction counts as one cycle but costs more to prove, which proof times reflect. Proof times are medians of four to six proofs of one spend on an Apple M5 Max, without zero knowledge; the SHA-256 and BLAKE2s programs were timed in separate runs, and repeated runs varied by up to 40%. Gas is what the EVM program uses under Cancun rules. It does not depend on how the bytecode is executed, and RISC-V programs have none.</p>
+    <p class="note">Each ratio divides a program's value by the baseline's, drawn as a dashed line; click any row to make it the baseline. Cycles count the instructions leanVM executes, the largest count over the measured valid test cases; a <code>blake2s</code> instruction counts as one cycle but costs more to prove, which proof times reflect. Proof times are medians of four to six proofs of one spend on an Apple M5 Max, without zero knowledge. The two hash editions were timed in separate runs; retained samples of the same program differ by up to about 1.9×, so small timing differences are inconclusive. Gas is function execution gas under this restricted Cancun profile, excluding transaction overhead; the hypothetical BLAKE2s precompile is priced like SHA-256. RISC-V programs have no gas metric here.</p>
   </div>
 </section>
 
 <section aria-labelledby="eip">
   <h2 id="eip">What this means for EIP-8288</h2>
-  <p><strong>EVM programs are practical when their heavy operations are precompiles that the zkVM computes with a dedicated instruction.</strong> Executed by the interpreter for proving, the EVM program then takes about twice the cycles of a RISC-V program using the same instruction, and nearly four times when executed by REVM.</p>
-  <p><strong>One interpreter can execute every EVM program under one verification key.</strong> The interpreter takes the bytecode as input and hashes it, so each proof states that the program with this bytecode hash, run under a named fork's EVM rules, returned this output. Under the current EIP-8288 draft, a contract would accept the interpreter's verification key hash under the generic leanSTARK scheme, and an immutable contract would be stuck when that key changes. A dedicated scheme, whose fork configuration pins the interpreter and the verifier, lets contracts name their program by fork and bytecode hash instead. A faster interpreter or a new proof system then reaches every contract without changes. Because the program names its fork, a later fork that adds precompiles or reprices gas does not change what an existing program computes; the interpreter keeps every admitted fork's rules, as execution clients do. The interpreter becomes part of what verifiers trust: any deviation from the EVM rules could let a program accept an input it should reject, so it needs the same review and testing as a verifier.</p>
-  <p><strong>The hash precompile has to match a zkVM instruction.</strong> L1 has the SHA-256 precompile at <code>0x02</code> and the <code>KECCAK256</code> opcode. The leanVM version measured here has an instruction only for BLAKE2s, which has no L1 precompile; L1's BLAKE2 precompile at <code>0x09</code> computes the BLAKE2b compression, a different function. leanVM's README calls BLAKE2s a placeholder, with SHA-2, SHA-3 and BLAKE3 under consideration. If leanVM settles on BLAKE2s or BLAKE3, L1 needs a precompile for it, added by a hard fork before programs deploy, because a deployed program keeps the hash it was written with. If it settles on SHA-256 or SHA-3, L1 already has a match: the <code>0x02</code> precompile, or the <code>KECCAK256</code> opcode, which uses the same Keccak permutation as SHA-3. A precompile also keeps the hash cheap on-chain, where a pool inserts commitments into its Merkle tree. Computed with EVM opcodes, BLAKE2s costs about 26,000 gas per compression.</p>
-  <p><strong>Every other heavy primitive needs the same.</strong> A signature check inside a private account's program, for example, is practical only as an L1 precompile that the zkVM computes with a dedicated instruction. Computed with EVM opcodes, BLAKE2s takes 17 to 223 times the cycles of a RISC-V program computing it with base instructions, because opcodes on 256-bit words emulate its 32-bit arithmetic.</p>
-  <p><strong>RISC-V remains the long-term target.</strong> RISC-V programs cost less to prove, and a new primitive can run on base instructions without a new precompile or a fork. Proving them directly under EIP-8288 needs one verification key for all RISC-V programs, with each program bound by its hash the way the interpreter binds bytecode. No RISC-V prover offers that yet. The interpreter is itself a RISC-V program, so EVM programs would keep working once one does.</p>
+  <p><strong>This spend has modest interpreter overhead when its hash uses a dedicated instruction.</strong> With BLAKE2s on both sides, the interpreter for proving takes 1.96 times the direct RISC-V cycles, and REVM takes 3.85 times. These measurements cover a restricted, stateless spend function, without zero knowledge. They do not establish the cost of arbitrary EVM applications or production private proofs.</p>
+  <p><strong>A shared interpreter could bind many programs under one verification key.</strong> It would take bytecode as input and bind its hash, execution profile and output. This benchmark instead embeds each program's bytecode. The <a href="https://eips.ethereum.org/EIPS/eip-8288#new-frame-mode">current EIP-8288 draft</a> identifies generic STARK relations by verification-key hash; a contract that pins one hash cannot automatically accept another. A proposed execution scheme could instead bind the bytecode hash and execution profile, with protocol upgrades replacing the interpreter and verifier while preserving those semantics. That scheme and its upgrade rules are additional design work. The interpreter becomes part of what verifiers trust and needs corresponding review and testing.</p>
+  <p><strong>The fast hash path depends on the exact primitive exposed.</strong> L1 has SHA-256 at <code>0x02</code> and <code>KECCAK256</code>. The pinned leanVM has a BLAKE2s instruction; L1's <a href="https://eips.ethereum.org/EIPS/eip-152">BLAKE2 precompile at <code>0x09</code></a> computes BLAKE2b compression, a different function. Adding a direct BLAKE2s or BLAKE3 call under ordinary L1 EVM rules would require a new precompile. A proof-only execution profile could expose it separately, but on-chain tree updates would still need an implementation. SHA-256 already matches L1. A Keccak-f instruction could accelerate <code>KECCAK256</code> with Ethereum's padding; a complete SHA3-256 instruction is not automatically compatible, because <a href="https://keccak.team/keccak_specs_summary.html">SHA3-256 and Keccak-256 use different domain separation</a>.</p>
+  <p><strong>Other heavy primitives need their own measurements.</strong> The measured BLAKE2s bytecode takes 17 to 223 times the cycles of the base-instruction RISC-V version, and about 26,000 gas per compression averaged over this spend. This demonstrates the cost of this implementation of 32-bit arithmetic in EVM bytecode. It does not establish that every signature or hash is practical only with an L1 precompile. Changing the hash also changes commitments and nullifiers, so the SHA-256 and BLAKE2s editions are different relations, not interchangeable implementations of one deployed pool.</p>
+  <p><strong>Direct RISC-V remains a useful design option.</strong> It avoids EVM interpretation and can implement new primitives with base instructions. EIP-8288's generic interface does not require one universal RISC-V key. Shared verifier parameters with program-hash binding already exist in other zkVMs, such as <a href="https://docs.rs/risc0-zkvm/latest/risc0_zkvm/struct.Receipt.html#method.verify">RISC Zero</a>; compatibility with the proposed aggregation scheme is a separate question. This benchmark does not implement that integration or measure a stable program-hash interface across prover upgrades.</p>
 </section>
 
 <section aria-labelledby="challenge">
   <h2 id="challenge">The challenge</h2>
-  <p>The challenge asks for the EVM bytecode that checks this spend in the fewest cycles, with the SHA-256 precompile at <code>0x02</code> as the only hash. Everything else is fixed: REVM executes the bytecode, and the leanVM version and SHA-256 code do not change. The score is the largest cycle count over the valid test cases, including new ones generated at scoring time. Three entries so far:</p>
+  <p>The challenge asks for the EVM bytecode that checks this spend in the fewest cycles, with SHA-256 as the statement hash and <code>0x02</code> as the only allowed precompile. Everything else is fixed: REVM executes the bytecode, and the leanVM version and SHA-256 code do not change. The score is the largest cycle count over the valid test cases, including new ones generated at scoring time. Three entries so far:</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th></th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Gas</th></tr></thead>
@@ -354,7 +356,7 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
 
 <section aria-labelledby="method">
   <h2 id="method">How it was measured</h2>
-  <p>The prover is leanVM's <code>riscv-exploration</code> branch at commit <a href="https://github.com/leanEthereum/leanVM/tree/1096dedfbe29c72cfff2a2d8d8b420e6ff0d9f2d"><code>1096dedf</code></a>: RV64IM plus the <code>blake2s</code> instruction, without zero knowledge. Every program accepts all valid test cases and rejects all invalid ones on leanVM. The BLAKE2s precompile (at <code>0xb2</code> here) is hypothetical and priced like SHA-256. The interpreter for proving and the compiled programs are research code: they match REVM on every test case and on 3.6 million random programs, but they are not audited. Here each program's bytecode is built into the RISC-V program that leanVM proves; a production interpreter would take the bytecode as input and hash it, which for this program adds an estimated 10,000 cycles with the <code>blake2s</code> instruction.</p>
+  <p>The prover is leanVM's <code>riscv-exploration</code> branch at commit <a href="https://github.com/leanEthereum/leanVM/tree/1096dedfbe29c72cfff2a2d8d8b420e6ff0d9f2d"><code>1096dedf</code></a>: RV64IM plus the <code>blake2s</code> instruction, without zero knowledge. The harness executes a stateless EVM function with only the hash precompile, no storage, logs or environment reads, a 30-million gas limit and a 1 MiB memory limit. Native fixture tests check valid digests and invalid-input rejection. The fast interpreter was also compared with REVM on about 3.6 million random programs; the compiled entries were checked on fixed fixture sets at multiple gas limits. These are finite tests, not a proof of equivalence or a production security audit. Each guest embeds its bytecode. Hashing this bytecode as dynamic input is estimated to add about 10,000 cycles with the <code>blake2s</code> instruction; the complete dynamic-input path has not been measured. <a href="https://github.com/soispoke/evm-spend-challenge/blob/main/RESULTS.md">Results and raw measurements</a> document the checks and their scope.</p>
 </section>
 
 <footer>Specification, results and code: <a href="https://github.com/soispoke/evm-spend-challenge">github.com/soispoke/evm-spend-challenge</a>. Research code, not audited.</footer>
@@ -411,7 +413,7 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
     base: { title: "Base instructions on both sides", base: "r-sha", sel: { hash: ["sha-base"], entry: ["hw"] },
       note: "The challenge's setup. The EVM program calls the SHA-256 precompile at 0x02; leanVM has no SHA-256 instruction, so both programs compute SHA-256 with base instructions, using the same Rust code. Hashing dominates, so the interpreter adds little." },
     unaligned: { title: "No BLAKE2s precompile", base: "r-b2i", sel: { hash: ["sha-base", "b2-ins"], run: ["fast"], entry: ["hw"] },
-      note: "Both programs with SHA-256 computed with base instructions, and both with BLAKE2s computed with the blake2s instruction, the EVM program executed by the interpreter for proving. Without a BLAKE2s precompile, the EVM program is limited to the SHA-256 rows." },
+      note: "Two hash-specific versions of the spend rules: SHA-256 on base instructions and BLAKE2s with the blake2s instruction. The challenge's SHA-256-only profile supplies the SHA rows; the BLAKE2s EVM rows assume a hypothetical precompile. The hashes produce different commitments and nullifiers." },
     "riscv-base": { title: "RISC-V without the blake2s instruction", base: "b2i-hw-fast", sel: { hash: ["b2-base", "b2-ins"], entry: ["hw"] },
       note: "If RISC-V programs may use only base instructions, the RISC-V program computes BLAKE2s instruction by instruction, while the EVM program's BLAKE2s precompile can still use the blake2s instruction." },
     opcodes: { title: "BLAKE2s in EVM opcodes", base: "r-b2base", scale: "log", sel: { hash: ["b2-base", "b2-evm"], entry: ["yul"] },
@@ -641,4 +643,5 @@ footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; 
   applyView(start, false, false);
 })();
 </script>
+</body>
 </html>

@@ -8,7 +8,7 @@ Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cy
 
 EIP-8288 lets transactions carry proofs that Ethereum verifies. A privacy application's proof shows that a program accepted a spend: the program reads the private data (keys, notes, Merkle paths) and the public values, checks the pool's rules, and outputs a hash of the public values. If that program costs about as much to prove as EVM bytecode as it does compiled to RISC-V, applications could keep writing it in EVM bytecode, which weakens the performance case for letting them use RISC-V directly. Letting entrants optimize the EVM program measures the best achievable cost rather than the cost of one implementation.
 
-SHA-256 is the only hash, because the EVM already provides it as precompile `0x02`. No new precompile is assumed, and a precompile for another hash would be called the same way.
+The statement uses SHA-256 throughout, because the EVM already provides it as precompile `0x02`. No new precompile is assumed. The interpreter also permits ordinary pure opcodes, including `KECCAK256`; auxiliary computations do not change the required SHA-256 statement digest.
 
 ## Submission
 
@@ -87,7 +87,9 @@ The invalid cases cover every rule: removing any one rule check from any of the 
 
 ### Score
 
-The score is the largest RV64IM cycle count over all valid test cases, as counted by the fixed leanVM executor. Lower is better. The padded trace size must be the same for every valid input, because the proof reveals it; otherwise the entry is rejected. Taking the largest count means that shortcuts on private data, such as skipping a dummy note's path, never lower the score. Contract size limits do not apply, because the bytecode is a proved program and is never deployed.
+The score is the largest RV64IM cycle count over the measured valid test cases, as counted by the fixed leanVM executor. Lower is better. The full vector of padded table sizes must be identical across those cases, because the proof reveals it; otherwise the entry is rejected. A shortcut that improves only cases below the measured maximum does not lower the score. Contract size limits do not apply, because the bytecode is a proved program and is never deployed.
+
+The shape check is finite validation, not a proof that every valid input has the same shape or a privacy guarantee. The pinned leanVM has no zero knowledge and also publishes a final execution timestamp. A production private prover needs a separate leakage analysis.
 
 ### Fixed setup
 

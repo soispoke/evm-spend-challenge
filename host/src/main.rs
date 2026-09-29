@@ -23,6 +23,27 @@ fn digest_words(digest: &[u8; 32]) -> [u64; 4] {
     words(digest).try_into().unwrap()
 }
 
+/// Decode only the optional, canonically encoded Rule(uint8) custom error.
+fn reported_rule(data: &[u8]) -> Option<u8> {
+    (data.len() == 36 && data[..4] == [0xa3, 0x32, 0xd2, 0x6d] && data[4..35].iter().all(|&b| b == 0))
+        .then(|| data[35])
+}
+
+fn execution_matches(output: Option<[u64; 4]>, public: [u64; 4], valid: bool) -> bool {
+    if valid { output == Some(public) } else { output.is_none() }
+}
+
+fn execution_public(want: Option<[u8; 32]>, case: &Value) -> [u64; 4] {
+    // The guest checks its digest against this public input before it halts.
+    // A negative test must therefore use its canonical digest too: zero would
+    // make a missing rule check look like rejection solely on a digest mismatch.
+    let digest = want.unwrap_or_else(|| {
+        let hex = case["digest"].as_str().expect("invalid fixture lacks canonical digest; regenerate it with the oracle");
+        unhex(hex).try_into().expect("fixture digest must be 32 bytes")
+    });
+    digest_words(&digest)
+}
+
 struct Args {
     rest: Vec<String>,
 }
@@ -95,8 +116,8 @@ fn check(args: &Args) -> ExitCode {
                 (Some(digest), Ok(got)) => got == digest,
                 // A rejected case must not return output. When the candidate
                 // reports `Rule(uint8)`, the code must name the targeted rule.
-                (None, Err(spend_evm_engine::Error::Revert(data))) if data.len() == 36 => {
-                    rules.get(data[35] as usize).map(String::as_str) == rule
+                (None, Err(spend_evm_engine::Error::Revert(data))) => {
+                    reported_rule(data).is_none_or(|code| rules.get(code as usize).map(String::as_str) == rule)
                 }
                 (None, Err(_)) => true,
                 _ => false,
@@ -121,7 +142,7 @@ fn execute(args: &Args) -> ExitCode {
     let cycle_cap: u64 = args.value("--cycle-cap").map_or(200_000_000, |v| v.parse().unwrap());
     let mut failures = Vec::new();
     let mut valid_cycles = Vec::new();
-    let (mut padded, mut witness) = (BTreeSet::new(), BTreeSet::new());
+    let (mut padded, mut padded_shapes, mut witness) = (BTreeSet::new(), BTreeSet::new(), BTreeSet::new());
     for case in &cases {
         let input_bytes = unhex(case["input"].as_str().unwrap());
         // Guests read a fixed 1,680-byte input; wrong lengths are a host-side check.
@@ -132,7 +153,7 @@ fn execute(args: &Args) -> ExitCode {
         if valid_only && want.is_none() {
             continue;
         }
-        let public = want.map_or([0u64; 4], |d| digest_words(&d));
+        let public = execution_public(want, case);
         let t = Instant::now();
         let mut machine = lean_vm::rv::Machine::new(&program.rv, public, &words(&input_bytes));
         let mut cycles = 0u64;
@@ -153,11 +174,12 @@ fn execute(args: &Args) -> ExitCode {
             cycles += 1;
         }
         let output = if error.is_none() { machine.run(1).ok() } else { None };
-        let accepted = output.is_some_and(|out| out == public) && want.is_some();
+        let accepted = output.is_some();
+        let correct = execution_matches(output, public, want.is_some());
         let name = case["name"].as_str().unwrap();
         let mut record = json!({"case": name, "valid": want.is_some(), "accepted": accepted,
             "cycles": cycles, "execution_s": t.elapsed().as_secs_f64()});
-        if accepted {
+        if correct && want.is_some() {
             let filled = lean_vm::cpu::filler::filled(base_counts, &lean_vm::cpu::filler::solve(base_counts));
             let taus = filled.map(|count| count.trailing_zeros() as usize);
             let mut sizes = vec![0usize];
@@ -174,17 +196,18 @@ fn execute(args: &Args) -> ExitCode {
             record["witness_log_size"] = json!(shape.mu);
             record["base_counts"] = json!(base_counts);
             padded.insert(padded_cycles);
+            padded_shapes.insert(filled.to_vec());
             witness.insert(shape.mu);
             valid_cycles.push(cycles);
         }
-        if accepted != want.is_some() {
+        if !correct {
             failures.push(name.to_owned());
         }
         println!("{record}");
     }
     let summary = json!({"summary": true, "route": route, "valid_cases": valid_cycles.len(),
         "score_max_cycles": valid_cycles.iter().max(), "min_cycles": valid_cycles.iter().min(),
-        "distinct_padded_cycles": padded, "distinct_witness_log_size": witness,
+        "distinct_padded_cycles": padded, "distinct_padded_counts": padded_shapes, "distinct_witness_log_size": witness,
         "within_proof_size_bound": witness.iter().all(|&mu| mu <= 28), "failures": failures});
     println!("{summary}");
     if failures.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE }
@@ -243,5 +266,46 @@ fn main() -> ExitCode {
         "execute" => execute(&args),
         "prove" => prove_case(&args),
         other => panic!("unknown mode {other}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn negative_execution_cannot_succeed_even_with_zero_or_unexpected_output() {
+        assert!(!execution_matches(Some([0; 4]), [0; 4], false));
+        assert!(!execution_matches(Some([1; 4]), [0; 4], false));
+        assert!(execution_matches(None, [0; 4], false));
+        assert!(execution_matches(Some([1; 4]), [1; 4], true));
+        assert!(!execution_matches(Some([0; 4]), [1; 4], true));
+        assert!(!execution_matches(None, [1; 4], true));
+    }
+
+    #[test]
+    fn invalid_execution_uses_the_oracles_digest() {
+        let case = json!({"valid": false, "digest": "01".repeat(32)});
+        assert_eq!(execution_public(None, &case), [0x0101_0101_0101_0101; 4]);
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid fixture lacks canonical digest")]
+    fn invalid_execution_requires_a_digest() {
+        execution_public(None, &json!({"valid": false}));
+    }
+
+    #[test]
+    fn optional_rule_error_requires_its_selector_and_canonical_argument() {
+        let mut data = [0u8; 36];
+        data[..4].copy_from_slice(&[0xa3, 0x32, 0xd2, 0x6d]);
+        data[35] = 7;
+        assert_eq!(reported_rule(&data), Some(7));
+        data[0] ^= 1;
+        assert_eq!(reported_rule(&data), None);
+        data[0] ^= 1;
+        data[4] = 1;
+        assert_eq!(reported_rule(&data), None);
+        assert_eq!(reported_rule(&[]), None);
     }
 }

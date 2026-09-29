@@ -388,7 +388,12 @@ def case_record(name, payload, rule=None):
         assert violated == [], (name, violated)
         return {"name": name, "valid": True, "input": payload.hex(), "digest": digest.hex()}
     assert violated == [rule], (name, rule, violated)
-    return {"name": name, "valid": False, "rule": rule, "input": payload.hex()}
+    result = {"name": name, "valid": False, "rule": rule, "input": payload.hex()}
+    # Guest negative tests must use the actual public digest: an all-zero
+    # substitute would reject a missing rule check only on a digest mismatch.
+    if digest is not None:
+        result["digest"] = digest.hex()
+    return result
 
 
 def generate(seed: int) -> dict:
@@ -450,7 +455,7 @@ def main() -> int:
     for case in saved["cases"]:
         violated, digest = evaluate(bytes.fromhex(case["input"]))
         expected = [] if case["valid"] else [case["rule"]]
-        assert violated == expected and (not case["valid"] or digest.hex() == case["digest"]), case["name"]
+        assert violated == expected and (digest is None or digest.hex() == case["digest"]), case["name"]
     print(f"checked {len(saved['cases'])} cases")
     return 0
 

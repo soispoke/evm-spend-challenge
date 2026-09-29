@@ -5,8 +5,8 @@
    (new seeds): every valid input must return the exact digest and every
    invalid input must be rejected.
 2. Build the EVM guest with the candidate bytecode and execute every valid case
-   on the pinned leanVM executor. The padded trace size, which a proof reveals,
-   must be the same for all valid inputs.
+   on the pinned leanVM executor. Every padded table size, which a proof reveals,
+   must be the same across the tested valid inputs.
 3. The score is the largest cycle count over all valid cases. Lower is better.
 
 Usage: python3 scripts/score.py [BYTECODE_HEX] [--hidden-seeds N ...] [--out FILE]
@@ -69,7 +69,7 @@ def main() -> int:
                 return 1
 
         build_guest(bytecode_hex)
-        cycles, padded, witness = [], set(), set()
+        cycles, padded, padded_shapes, witness = [], set(), set(), set()
         for path in case_files:
             code, lines = run_json_lines([str(SCORER), "execute", "--route", "evm", "--elf", str(GUEST),
                                           "--fixtures", str(path), "--valid-only"])
@@ -79,22 +79,24 @@ def main() -> int:
                 return 1
             cycles += [line["cycles"] for line in lines[:-1]]
             padded |= set(summary["distinct_padded_cycles"])
+            padded_shapes |= {tuple(counts) for counts in summary["distinct_padded_counts"]}
             witness |= set(summary["distinct_witness_log_size"])
 
     result = {
-        "accepted": len(padded) == 1,
+        "accepted": len(padded_shapes) == 1,
         "score_cycles": max(cycles),
         "min_cycles": min(cycles),
         "valid_cases_executed": len(cycles),
         "padded_cycles": sorted(padded),
+        "padded_counts": sorted(padded_shapes),
         "witness_log_size": sorted(witness),
         "provable_at_pinned_size_bound": all(mu <= 28 for mu in witness),
         "bytecode_bytes": len(bytecode_hex) // 2,
         "hidden_seeds": seeds,
         "gate": gate,
     }
-    if len(padded) != 1:
-        result["rejection"] = "padded trace size depends on the private input"
+    if len(padded_shapes) != 1:
+        result["rejection"] = "padded table sizes vary across the tested valid inputs"
     print(json.dumps(result, indent=1))
     if args.out:
         args.out.write_text(json.dumps(result, indent=1) + "\n")
