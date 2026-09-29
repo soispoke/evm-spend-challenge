@@ -107,7 +107,7 @@ An entry changes only its bytecode. The rest is fixed:
 | [Optimized Yul entry](evm/yul/generate.py) | 625,721 | 1.36 | 14,658 |
 | [Hand-written bytecode entry](evm/bytecode/generate.py) | 615,971 | 1.34 | 14,559 |
 
-Gas is reported for comparison with gas-scored challenges such as precompile.fast; it does not enter the score. [RESULTS.md](RESULTS.md) has the full measurements: control programs, where the cycles go, instruction counts, gas, proof times, estimates with faster SHA-256, and the same programs under faster interpreters.
+Gas is reported for comparison with gas-scored challenges such as precompile.fast; it does not enter the score. [RESULTS.md](RESULTS.md) has the full measurements: control programs, where the cycles go, gas, proof times, the same programs under faster interpreters, and a BLAKE2s edition with and without leanVM's hash instruction.
 
 ## Provers and zero knowledge
 

@@ -1,24 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EVM Spend Challenge</title>
 <style>
+/* Layout: one reading column. The results chart is a set of small multiples on one shared
+   scale, so bar lengths compare within and across hash setups. Palette: ethereum.org purple
+   and cool neutrals, as in the vault's design system. */
 :root {
   --bg: #FFFFFF;
   --bg-soft: #F7F7F9;
-  --bg-sunk: #EEEDF3;
   --ink: #121212;
   --ink-2: #4E4D57;
   --ink-3: #74737D;
   --line: #E4E3EA;
   --line-strong: #CCCBD5;
   --link: #5C1EB4;
-  --entry: #6C24DF;
-  --entry-soft: #F2EAFE;
-  --seg-code: #6C24DF;
-  --seg-hash: #CFCED7;
-  --on-fill: #FFFFFF;
-  --measured: #0E8074;
-  --estimate: #8A5A00;
+  --accent: #6C24DF;
+  --accent-soft: #F2EAFE;
+  --on-accent: #FFFFFF;
+  --bar-riscv: #57565F;
+  --bar-compiled: #C9ADF7;
+  --bar-fast: #8B4FEF;
+  --bar-revm: #4A1795;
   --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -27,40 +32,38 @@
     color-scheme: dark;
     --bg: #111014;
     --bg-soft: #19181E;
-    --bg-sunk: #242329;
     --ink: #EDEDF1;
     --ink-2: #B7B6C0;
     --ink-3: #8F8E99;
     --line: #2B2A32;
     --line-strong: #3C3B45;
     --link: #CCAFFC;
-    --entry: #B38DF0;
-    --entry-soft: #261C3A;
-    --seg-code: #8F55EF;
-    --seg-hash: #4A4952;
-    --on-fill: #111014;
-    --measured: #3FC1B3;
-    --estimate: #F0C263;
+    --accent: #B38DF0;
+    --accent-soft: #261C3A;
+    --on-accent: #111014;
+    --bar-riscv: #A9A8B3;
+    --bar-compiled: #553A8C;
+    --bar-fast: #8F55EF;
+    --bar-revm: #CCAFFC;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #111014;
   --bg-soft: #19181E;
-  --bg-sunk: #242329;
   --ink: #EDEDF1;
   --ink-2: #B7B6C0;
   --ink-3: #8F8E99;
   --line: #2B2A32;
   --line-strong: #3C3B45;
   --link: #CCAFFC;
-  --entry: #B38DF0;
-  --entry-soft: #261C3A;
-  --seg-code: #8F55EF;
-  --seg-hash: #4A4952;
-  --on-fill: #111014;
-  --measured: #3FC1B3;
-  --estimate: #F0C263;
+  --accent: #B38DF0;
+  --accent-soft: #261C3A;
+  --on-accent: #111014;
+  --bar-riscv: #A9A8B3;
+  --bar-compiled: #553A8C;
+  --bar-fast: #8F55EF;
+  --bar-revm: #CCAFFC;
 }
 
 * { box-sizing: border-box; }
@@ -79,26 +82,61 @@ body {
   display: grid;
   gap: 48px;
 }
-section, header { display: grid; gap: 14px; }
-h1, h2 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+section, header { display: grid; gap: 14px; min-width: 0; }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
 h1 { font-size: 36px; line-height: 1.15; font-weight: 750; }
 h2 { font-size: 22px; line-height: 1.3; font-weight: 700; }
+h3 { font-size: 16px; line-height: 1.35; font-weight: 650; }
 p { margin: 0; max-width: 68ch; }
 a { color: var(--link); text-underline-offset: 3px; }
 code { font-family: var(--mono); font-size: 0.88em; }
 .meta { font-size: 14px; color: var(--ink-3); }
+.lead { font-size: 18px; line-height: 1.55; }
 .note { font-size: 14px; color: var(--ink-2); }
-:focus-visible { outline: 2px solid var(--entry); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 /* Setup diagram */
 .routes { display: grid; gap: 10px; }
-.lane { display: grid; grid-template-columns: 120px 1fr 24px 1fr 24px 1fr; align-items: stretch; }
-.lane-name { align-self: center; font-weight: 600; font-size: 15px; line-height: 1.3; padding-right: 10px; }
-.lane-name span { display: block; font-weight: 400; font-size: 13px; color: var(--ink-3); }
+.lane { display: grid; grid-template-columns: 72px 1fr 24px 1fr 24px 1fr; align-items: stretch; }
+.lane-name { align-self: center; font-weight: 650; font-size: 15px; }
 .box { border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.4; background: var(--bg); }
-.box.entry { border: 2px solid var(--entry); background: var(--entry-soft); }
+.box.evm { border: 2px solid var(--accent); background: var(--accent-soft); }
 .arrow { display: grid; place-items: center; color: var(--ink-3); }
 .arrow::before { content: "\2192"; }
+
+/* Key results */
+ul.results { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 68ch; }
+
+/* Chart */
+.chart { border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); padding: 18px; display: grid; gap: 22px; min-width: 0; }
+.chart-top { display: grid; gap: 14px; }
+.toggle { display: inline-flex; justify-self: start; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.toggle button { font: 500 14px/1.2 var(--sans); color: var(--ink); background: var(--bg); border: 0; padding: 8px 14px; cursor: pointer; }
+.toggle button + button { border-left: 1px solid var(--line-strong); }
+.toggle button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+.legend > div { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 8px; }
+.legend b { color: var(--ink); font-weight: 600; }
+.swatch { width: 12px; height: 12px; border-radius: 2px; margin-top: 3px; }
+.groups { display: grid; gap: 22px; }
+.group { display: grid; gap: 6px; }
+.group-head { display: grid; gap: 2px; margin-bottom: 4px; }
+.group-head p { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.row, .axis { display: grid; grid-template-columns: 210px minmax(0, 1fr) 132px; gap: 10px; align-items: center; }
+.row { font-size: 14px; }
+.row-label { color: var(--ink-2); line-height: 1.3; }
+.track { position: relative; height: 22px; }
+.gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.bar { position: absolute; left: 0; top: 3px; bottom: 3px; border-radius: 3px; min-width: 2px; transition: width 200ms ease; }
+.bar.off-scale::after { content: ""; position: absolute; right: 12px; top: -4px; bottom: -4px; width: 5px; background: var(--bg-soft); transform: skewX(-20deg); }
+.value { display: flex; justify-content: flex-end; gap: 8px; font: 500 13px/1.2 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.value span { color: var(--ink-3); }
+.value b { font-weight: 650; color: var(--ink); }
+.none { font-size: 13px; color: var(--ink-3); }
+.axis { font: 12px/1 var(--mono); color: var(--ink-3); }
+.axis-track { position: relative; height: 14px; }
+.axis-track span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.axis-track span:first-child { transform: none; }
 
 /* Tables */
 .table-wrap { overflow-x: auto; }
@@ -106,317 +144,212 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; }
 th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 13px; font-weight: 600; color: var(--ink-3); border-bottom-color: var(--line-strong); }
 td.r, th.r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-td.code { width: 36px; color: var(--ink-3); font-family: var(--mono); font-size: 13px; }
-tr.entry-row td { background: var(--entry-soft); }
-tr.total-row td { font-weight: 600; border-top: 1px solid var(--line-strong); }
 
-/* Explorer */
-.explorer { border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); padding: 18px; display: grid; gap: 18px; }
-.presets { display: flex; flex-wrap: wrap; gap: 8px; }
-.presets button {
-  font: 500 14px/1.2 var(--sans); color: var(--ink); background: var(--bg);
-  border: 1px solid var(--line-strong); border-radius: 6px; padding: 7px 12px; cursor: pointer;
-}
-.presets button[aria-pressed="true"] { background: var(--seg-code); border-color: var(--seg-code); color: var(--on-fill); }
-.choice { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: center; }
-.choice-label { font-weight: 600; font-size: 15px; }
-.control { display: grid; gap: 4px; }
-.control label { font-weight: 600; font-size: 15px; }
-.control .value { font: 500 14px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
-.control .hint { font-size: 13px; color: var(--ink-3); }
-input[type="range"] { width: 100%; accent-color: var(--seg-code); margin: 0; }
-.bars { display: grid; gap: 10px; }
-.bar-row { display: grid; grid-template-columns: 70px 1fr 110px; gap: 10px; align-items: center; font-size: 14px; }
-.bar-row .total { font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--ink-2); }
-.track { height: 26px; background: var(--bg-sunk); border-radius: 4px; overflow: hidden; }
-.stack { display: flex; height: 100%; }
-.seg { height: 100%; min-width: 3px; flex: none; border-right: 2px solid var(--bg-sunk); transition: width 160ms ease; }
-.seg:last-child { border-right: 0; }
-.seg-hash { background: var(--seg-hash); }
-.seg-code { background: var(--seg-code); }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
-.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-.result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
-.result b { font-size: 24px; font-variant-numeric: tabular-nums; }
-.status { font-size: 14px; }
-.status.measured { color: var(--measured); }
-.status.estimate { color: var(--estimate); }
-
-ol.plain, ul.plain { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 68ch; }
-footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--ink-3); display: grid; gap: 6px; }
+footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--ink-3); }
 
 @media (max-width: 720px) {
   .page { padding-inline: 16px; padding-block: 28px 44px; gap: 40px; }
   h1 { font-size: 30px; }
+  .lead { font-size: 17px; }
   .lane { grid-template-columns: 1fr; gap: 4px; }
-  .lane-name { padding: 6px 0 2px; }
+  .lane-name { padding-top: 6px; }
   .arrow { height: 16px; }
   .arrow::before { content: "\2193"; }
-  .choice { grid-template-columns: 1fr; gap: 6px; }
+  .chart { padding: 14px; }
+  .legend { grid-template-columns: 1fr; }
+  .row, .axis { grid-template-columns: minmax(0, 1fr) 118px; row-gap: 2px; }
+  .row-label { grid-column: 1 / -1; }
+  .axis > :first-child { display: none; }
   th, td { padding: 8px 7px; }
   table { font-size: 14px; }
-  .bar-row { grid-template-columns: 56px 1fr; }
-  .bar-row .total { grid-column: 2; text-align: left; }
 }
-@media (prefers-reduced-motion: reduce) { .seg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
 </style>
 
 <main class="page">
 
 <header>
-  <div class="meta">Draft · EIP-8288 · 28 September 2026</div>
+  <div class="meta">Draft · EIP-8288 · 29 September 2026</div>
   <h1>EVM Spend Challenge</h1>
-  <p>Each private transfer in a privacy pool comes with a zero-knowledge proof that the spend follows the pool's rules. Today the minimal shielded pool writes those rules as a Circom circuit. Under EIP-8288 they could be written as a program and proved by a zkVM. This challenge measures how much that proof costs when the program is EVM bytecode run by an interpreter, compared with the same program compiled directly to RISC-V.</p>
-  <p>Entrants submit the EVM bytecode. The score is the number of RISC-V cycles it takes on a fixed version of leanVM. The result informs EIP-8288: if the EVM version costs close to the RISC-V version, applications could keep writing these programs in EVM bytecode, which weakens the performance case for letting them use RISC-V directly.</p>
+  <p class="lead">Under EIP-8288, a privacy pool could prove its spend rules with a program run in a zkVM. That program could be EVM bytecode run by an EVM interpreter, or RISC-V code compiled directly. We wrote the same spend check both ways and proved it with leanVM. How much more the EVM version costs depends mostly on how its bytecode is executed and on whether it can call the hash that the prover accelerates.</p>
 </header>
 
-<section aria-labelledby="findings">
-  <h2 id="findings">What we found</h2>
-  <ul class="plain">
-    <li>Plain Solidity takes 2.66 times the RISC-V cycles. Most of the extra is code the compiler generates around each hash call.</li>
-    <li>Hand-optimized entries take 1.36 times (Yul) and 1.34 times (hand-written bytecode). A program that only makes the 55 hash calls, with none of the checks, takes 1.22 times, so entries have little room left.</li>
-    <li>What remains is the interpreter. The same bytecode takes 1.10 times the RISC-V cycles when run by an interpreter written for proving, and 1.00 times when compiled ahead of time, so almost all of the gap comes from interpreting the program, not from EVM bytecode itself.</li>
-    <li>The interpreter matters more as hashing gets faster. At 200 cycles per SHA-256 compression, the hand-written entry would take 5.56 times the RISC-V cycles under REVM, 2.30 times with the new interpreter and 1.03 times compiled.</li>
-    <li>Gas ranks the entries in the same order as cycles but overstates their differences. The SHA-256 precompile costs about 85 cycles per unit of gas to prove, while the rest of the hand-written entry costs about 18 under REVM.</li>
-  </ul>
-</section>
-
 <section aria-labelledby="setup">
-  <h2 id="setup">Setup</h2>
+  <h2 id="setup">What was measured</h2>
   <div class="routes">
     <div class="lane">
-      <div class="lane-name">RISC-V<span>reference</span></div>
-      <div class="box">Program in Rust</div>
+      <div class="lane-name">RISC-V</div>
+      <div class="box">Spend check in Rust</div>
       <div class="arrow" aria-hidden="true"></div>
       <div class="box">Compiled to RV64IM</div>
       <div class="arrow" aria-hidden="true"></div>
-      <div class="box">Run and proved by leanVM</div>
+      <div class="box">Proved by leanVM</div>
     </div>
     <div class="lane">
-      <div class="lane-name">EVM<span>entry</span></div>
-      <div class="box entry">Program as EVM bytecode</div>
+      <div class="lane-name">EVM</div>
+      <div class="box evm">Spend check as EVM bytecode</div>
       <div class="arrow" aria-hidden="true"></div>
-      <div class="box">Run by the REVM interpreter, compiled to RV64IM</div>
+      <div class="box">Run by an EVM interpreter compiled to RV64IM</div>
       <div class="arrow" aria-hidden="true"></div>
-      <div class="box">Run and proved by leanVM</div>
+      <div class="box">Proved by leanVM</div>
     </div>
   </div>
-  <p>SHA-256 is the only hash. The EVM version calls the existing SHA-256 precompile at <code>0x02</code>, which is computed with the same code as in the Rust version, and it cannot call anything else. An entry changes only its bytecode; the interpreter, leanVM version and SHA-256 code are fixed.</p>
+  <p>The spend follows the minimal shielded pool's rules: two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee. Checking it takes 55 hash calls, 105 compressions. On RISC-V the hash is Rust code or leanVM's <code>blake2s</code> instruction. The EVM version calls a precompile, which the interpreter serves with the same code or instruction.</p>
 </section>
 
 <section aria-labelledby="results">
-  <h2 id="results">Results so far</h2>
+  <h2 id="results">Results</h2>
+  <ul class="results">
+    <li>With the hash accelerated on both sides, the interpreter sets the gap: 1.96 times the RISC-V cycles with an interpreter written for proving, 3.85 times with REVM, and 1.10 times with the bytecode compiled ahead of time.</li>
+    <li>With SHA-256 in software on both sides, the gap is only 1.10 to 1.34 times. Hashing takes 97% of the RISC-V cycles, and the EVM version runs the same hashing code.</li>
+    <li>An EVM program that cannot call the accelerated hash is about 10 times slower using SHA-256, and over 100 times slower with the hash written in EVM code.</li>
+    <li>A RISC-V program without the hash instruction takes 3.3 times the cycles of an EVM program whose precompile uses it.</li>
+  </ul>
+
+  <div class="chart">
+    <div class="chart-top">
+      <div class="toggle" role="group" aria-label="Metric">
+        <button type="button" id="metric-cycles" data-metric="cycles" aria-pressed="true">Cycles</button>
+        <button type="button" id="metric-time" data-metric="time" aria-pressed="false">Proof time</button>
+      </div>
+      <div class="legend">
+        <div><i class="swatch" style="background: var(--bar-riscv)"></i><span><b>RISC-V.</b> The spend in Rust, compiled to RV64IM.</span></div>
+        <div><i class="swatch" style="background: var(--bar-compiled)"></i><span><b>EVM, compiled ahead of time.</b> The bytecode translated to Rust. The floor for any interpreter, but each program becomes its own RISC-V program.</span></div>
+        <div><i class="swatch" style="background: var(--bar-fast)"></i><span><b>EVM, interpreter for proving.</b> Written for this study: one dispatch loop, gas checked only where a program can observe it.</span></div>
+        <div><i class="swatch" style="background: var(--bar-revm)"></i><span><b>EVM, REVM.</b> The Rust EVM used by Reth, not written for proving.</span></div>
+      </div>
+      <div class="axis" aria-hidden="true"><span></span><div class="axis-track" id="axis"></div><span></span></div>
+    </div>
+    <div class="groups" id="groups"></div>
+    <p class="note">Cycles are the largest count over all valid test cases and are exact for these builds. Proof times are medians of four to six proofs of one spend on an Apple M5 Max, without zero knowledge. The SHA-256 and BLAKE2s programs were timed in separate runs, and repeated runs varied by up to 40%. Proof time follows the padded trace, which leanVM rounds up to powers of two table by table, so equal cycle counts can prove at different speeds.</p>
+  </div>
+</section>
+
+<section aria-labelledby="eip">
+  <h2 id="eip">What this means for EIP-8288</h2>
+  <p><strong>EVM programs are practical when their heavy operations are precompiles that the prover accelerates.</strong> An EVM program then takes about twice the cycles of a RISC-V program using the same instruction when run by an interpreter written for proving, and nearly four times under REVM.</p>
+  <p><strong>One interpreter can prove every EVM program.</strong> The interpreter reads the bytecode as input and hashes it, so each proof states that the program with this bytecode hash, run under a named fork's EVM rules, returned this output. Under the current EIP-8288 draft, a contract would accept the interpreter's verification key hash under the generic leanSTARK scheme, and an immutable contract would be stuck when that key changes. A dedicated scheme, whose fork configuration pins the interpreter and the verifier, lets contracts name their program by fork and bytecode hash instead. A faster interpreter or a new proof system then reaches every contract without changes. The interpreter becomes part of what verifiers trust: any deviation from the EVM rules could let a program accept an input it should reject, so it needs the same review and testing as a verifier.</p>
+  <p><strong>The hash has to match.</strong> L1 has SHA-256 (precompile <code>0x02</code>) and Keccak-256 (the <code>KECCAK256</code> opcode). The leanVM version measured here accelerates only BLAKE2s, which L1 lacks. L1's BLAKE2 precompile at <code>0x09</code> computes the BLAKE2b compression, a different function. leanVM's README calls BLAKE2s a placeholder, with SHA-2, SHA-3 and BLAKE3 under consideration. If leanVM settles on BLAKE2s or BLAKE3, L1 needs a precompile for it, added by a hard fork before programs deploy, because a deployed program keeps the hash it was written with. If it settles on SHA-256 or SHA-3, L1 already has a match: <code>0x02</code>, or the <code>KECCAK256</code> opcode, which uses the same Keccak permutation as SHA-3. A precompile also keeps the hash cheap on-chain, where a pool inserts commitments into its Merkle tree; written in EVM code, BLAKE2s costs about 26,000 gas per compression.</p>
+  <p><strong>Every other heavy primitive needs the same.</strong> A signature check inside a private account's program, for example, is practical only as an L1 precompile that the prover accelerates. In EVM code, BLAKE2s takes 17 to 223 times the cycles of a RISC-V program computing it in software, because 256-bit EVM instructions emulate its 32-bit arithmetic.</p>
+  <p><strong>RISC-V remains the long-term target.</strong> RISC-V programs are faster and can add new primitives in software, without a fork. Proving them directly under EIP-8288 needs one verification key for all of them, with each program bound by its hash the way the interpreter binds bytecode. No RISC-V prover offers that yet. The interpreter is itself a RISC-V program, so EVM programs would keep working once one does.</p>
+</section>
+
+<section aria-labelledby="challenge">
+  <h2 id="challenge">The challenge</h2>
+  <p>The challenge asks for the fastest EVM bytecode for this spend, with SHA-256 at <code>0x02</code> as the only hash and everything else fixed: REVM, the leanVM version and the SHA-256 code. The score is the largest cycle count over the valid test cases, including new ones generated at scoring time. Three entries so far:</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th></th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Gas</th></tr></thead>
       <tbody>
         <tr><td>RISC-V reference (Rust)</td><td class="r">460,471</td><td class="r">1.00×</td><td class="r"></td></tr>
-        <tr class="entry-row"><td>EVM entry: Solidity baseline</td><td class="r">1,225,610</td><td class="r">2.66×</td><td class="r">41,075</td></tr>
-        <tr class="entry-row"><td>EVM entry: optimized Yul</td><td class="r">625,721</td><td class="r">1.36×</td><td class="r">14,658</td></tr>
-        <tr class="entry-row"><td>EVM entry: hand-written bytecode</td><td class="r">615,971</td><td class="r">1.34×</td><td class="r">14,559</td></tr>
+        <tr><td>Solidity baseline</td><td class="r">1,225,610</td><td class="r">2.66×</td><td class="r">41,075</td></tr>
+        <tr><td>Optimized Yul</td><td class="r">625,721</td><td class="r">1.36×</td><td class="r">14,658</td></tr>
+        <tr><td>Hand-written bytecode</td><td class="r">615,971</td><td class="r">1.34×</td><td class="r">14,559</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note">Cycles are the largest count over the valid test cases. Gas is what each entry uses under Cancun rules, the same on every valid case; a RISC-V program has no gas.</p>
-  <p>All three entries run the same SHA-256 code as the reference, plus about 108,000 cycles for REVM to make the 55 precompile calls. What separates them is the EVM bytecode outside the calls:</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th></th><th class="r">Solidity</th><th class="r">Yul</th><th class="r">Hand-written</th></tr></thead>
-      <tbody>
-        <tr><td>SHA-256, 105 compressions</td><td class="r">447,399</td><td class="r">447,399</td><td class="r">447,399</td></tr>
-        <tr><td>The 55 precompile calls themselves</td><td class="r">108,125</td><td class="r">108,125</td><td class="r">108,125</td></tr>
-        <tr><td>EVM bytecode outside the calls</td><td class="r">663,651</td><td class="r">63,762</td><td class="r">54,012</td></tr>
-        <tr><td>Start-up</td><td class="r">6,435</td><td class="r">6,435</td><td class="r">6,435</td></tr>
-        <tr class="total-row"><td>Total</td><td class="r">1,225,610</td><td class="r">625,721</td><td class="r">615,971</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p>On the transfer case, the Solidity baseline executes 8,684 EVM instructions, mostly code the compiler generates around each hash: moving values on the stack, computing and bounds-checking input offsets, and jumps. The Yul entry executes 1,348 and the hand-written entry 1,242. Both have no loops, never branch on private data, have each precompile call write its result where the next hash reads it, and skip checking each call's result, because under the fixed gas limit a SHA-256 call cannot fail. The hand-written entry also keeps its working values on the stack and writes each tag byte and shared field once.</p>
-  <p>Gas follows the same order but overstates the differences: the Solidity baseline uses 2.82 times the gas of the hand-written entry and 1.99 times its cycles. The precompile's own 5,256 gas pays for 447,399 cycles of hashing, so in proving terms gas prices hashing about five times below the other work under REVM, and further below it with a faster interpreter.</p>
+  <p>Plain Solidity pays for code the compiler generates around each hash call. The two hand-optimized entries come close to a program that only makes the 55 hash calls, at 1.22 times, so the rest of the gap is the interpreter's cost. Gas ranks the entries in the same order but overstates their differences. The Solidity baseline uses 2.82 times the gas of the hand-written entry but only 1.99 times its cycles, because the SHA-256 precompile's gas covers about 85 proving cycles per unit, against about 18 for the other instructions under REVM.</p>
+  <p class="note">The <a href="https://github.com/soispoke/evm-spend-challenge/blob/main/SPEC.md">specification</a> gives the rules, input format and scoring. The challenge has not launched.</p>
 </section>
 
-<section aria-labelledby="interpreter">
-  <h2 id="interpreter">How much is the interpreter</h2>
-  <p>The score fixes REVM so that entries compete on their bytecode. To see how much of the remaining gap is the interpreter, the same bytecode also ran in three other ways. Each gives the same results and gas as REVM on every test case, and the two interpreters also on three million random programs.</p>
-  <ul class="plain">
-    <li><strong>REVM with a direct SHA-256 call:</strong> the precompile runs inside the call instruction, hashing EVM memory in place, instead of through a new call frame.</li>
-    <li><strong>An interpreter written for proving:</strong> one dispatch loop, SHA-256 hashed straight from EVM memory, and gas checked only where a program can observe it.</li>
-    <li><strong>Compiled ahead of time:</strong> each program translated into one Rust function, which shows about the best an interpreter could reach. A verifier would have to trust the compiler, or a proof that the compiled program matches the bytecode.</li>
-  </ul>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Hand-written entry</th><th class="r">Cycles</th><th class="r">vs RISC-V</th><th class="r">Proof time</th><th class="r">vs RISC-V</th></tr></thead>
-      <tbody>
-        <tr><td>RISC-V reference</td><td class="r">460,471</td><td class="r">1.00×</td><td class="r">0.59 s</td><td class="r">1.00×</td></tr>
-        <tr class="entry-row"><td>REVM, as scored</td><td class="r">615,971</td><td class="r">1.34×</td><td class="r">0.95 s</td><td class="r">1.61×</td></tr>
-        <tr class="entry-row"><td>REVM, direct SHA-256 call</td><td class="r">597,324</td><td class="r">1.30×</td><td class="r">0.93 s</td><td class="r">1.58×</td></tr>
-        <tr class="entry-row"><td>Interpreter written for proving</td><td class="r">504,922</td><td class="r">1.10×</td><td class="r">0.88 s</td><td class="r">1.49×</td></tr>
-        <tr class="entry-row"><td>Compiled ahead of time</td><td class="r">461,359</td><td class="r">1.00×</td><td class="r">0.81 s</td><td class="r">1.38×</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="note">Proof times are medians of six leanVM proofs of one spend, from one interleaved run on an Apple M5 Max on AC power, without zero knowledge. Programs with the same padded trace took 0.81 to 0.88 seconds, so smaller differences are noise.</p>
-  <p>Proof time follows the padded trace, which leanVM rounds up to powers of two, table by table. The compiled version runs as many cycles as the reference, but its largest table ends just over a power of two that the reference stays 0.5% under, so its trace is 42% larger. The Solidity baseline gains the most from a better interpreter, from 2.66 to 1.94 times the RISC-V cycles, and 1.32 times compiled.</p>
+<section aria-labelledby="method">
+  <h2 id="method">How it was measured</h2>
+  <p>The prover is leanVM's <code>riscv-exploration</code> branch at commit <a href="https://github.com/leanEthereum/leanVM/tree/1096dedfbe29c72cfff2a2d8d8b420e6ff0d9f2d"><code>1096dedf</code></a>: RV64IM plus one custom instruction for the BLAKE2s compression, without zero knowledge. Every program accepts all valid test cases and rejects all invalid ones on leanVM. The BLAKE2s precompile (at <code>0xb2</code> here) is hypothetical and priced like SHA-256. The interpreter written for proving and the compiled programs are research code: they match REVM on every test case and on 3.6 million random programs, but they are not audited. Each program's bytecode is built into its guest here; a production interpreter would take it as input and hash it, which for this program adds an estimated 10,000 cycles with the instruction.</p>
 </section>
 
-<section aria-labelledby="explore">
-  <h2 id="explore">How the gap can change</h2>
-  <p>Entries cut the EVM bytecode they run; the interpreter sets what each instruction costs. A zkVM accelerator for SHA-256 would cut the hashing cycles of both versions by the same amount, which lowers both totals but raises the ratio.</p>
-  <div class="explorer">
-    <div class="choice">
-      <span class="choice-label" id="entry-label">Entry</span>
-      <div class="presets" role="group" aria-labelledby="entry-label">
-        <button type="button" data-entry="solidity">Solidity baseline</button>
-        <button type="button" data-entry="yul">Optimized Yul</button>
-        <button type="button" data-entry="bytecode">Hand-written bytecode</button>
-      </div>
-    </div>
-    <div class="choice">
-      <span class="choice-label" id="run-label">Run by</span>
-      <div class="presets" role="group" aria-labelledby="run-label">
-        <button type="button" data-run="revm">REVM, as scored</button>
-        <button type="button" data-run="fast">Interpreter written for proving</button>
-        <button type="button" data-run="compiled">Compiled ahead of time</button>
-      </div>
-    </div>
-    <div class="control">
-      <label for="hashcost">SHA-256 cycles per compression</label>
-      <input type="range" id="hashcost" min="0" max="4261" step="1" value="4261">
-      <div class="value" id="hashcost-value">4,261 cycles</div>
-      <div class="hint">Software SHA-256 today: 4,261. Each spend needs 105 compressions. An accelerator is modeled as fewer cycles per compression.</div>
-    </div>
-    <div class="bars" aria-hidden="true">
-      <div class="bar-row">
-        <span>RISC-V</span>
-        <div class="track"><div class="stack">
-          <div class="seg seg-hash" id="n-hash"></div>
-          <div class="seg seg-code" id="n-other"></div>
-        </div></div>
-        <span class="total" id="native-total"></span>
-      </div>
-      <div class="bar-row">
-        <span>EVM</span>
-        <div class="track"><div class="stack">
-          <div class="seg seg-hash" id="e-hash"></div>
-          <div class="seg seg-code" id="e-other"></div>
-        </div></div>
-        <span class="total" id="evm-total"></span>
-      </div>
-    </div>
-    <div class="legend">
-      <span><i style="background: var(--seg-hash)"></i>SHA-256, the same code in both</span>
-      <span><i style="background: var(--seg-code)"></i>Everything else: for the EVM version, running the entry's bytecode</span>
-    </div>
-    <div class="result" aria-live="polite">
-      <b id="ratio">1.34×</b><span>EVM cycles over RISC-V cycles</span>
-      <b id="extra">155,500</b><span>extra EVM cycles</span>
-      <span class="status measured" id="status">Measured</span>
-    </div>
-  </div>
-</section>
-
-<section aria-labelledby="statement">
-  <h2 id="statement">What the program checks</h2>
-  <p>The rules are those of the minimal shielded pool's current spend: two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee. Each output note is an amount plus the <code>inner</code> value its recipient provides. This version uses SHA-256 instead of Poseidon, fixed-width byte fields instead of field elements, and a one-byte tag at the start of every hashed message.</p>
-  <p>The input is 1,680 bytes, and the program makes 55 SHA-256 calls, 40 of them for the two Merkle paths. For a valid input it returns the 32-byte SHA-256 digest of the public values: both nullifiers, both output commitments, the root, domain, public amount, fee, recipient and authorizer. For an input that breaks any of these rules, it must return nothing:</p>
-  <div class="table-wrap">
-    <table>
-      <tbody>
-        <tr><td class="code">0</td><td>The input is exactly 1,680 bytes.</td></tr>
-        <tr><td class="code">1</td><td>Each input note's leaf index is below 2<sup>20</sup>.</td></tr>
-        <tr><td class="code">2</td><td>For each input note with nonzero value, the Merkle path from its commitment leads to the root.</td></tr>
-        <tr><td class="code">3</td><td>The two input values do not sum to zero.</td></tr>
-        <tr><td class="code">4</td><td>The input values sum to the output values plus the public amount plus the fee, computed without wraparound.</td></tr>
-        <tr><td class="code">5</td><td>An output with value zero has <code>inner</code> equal to 1 if it is the first output and 2 if it is the second.</td></tr>
-        <tr><td class="code">6</td><td>An output with nonzero value has <code>inner</code> other than 1 and 2.</td></tr>
-        <tr><td class="code">7</td><td>The authorizer address is not zero.</td></tr>
-        <tr><td class="code">8</td><td>The recipient address is zero exactly when the public amount is zero.</td></tr>
-        <tr><td class="code">9</td><td>The two nullifiers differ.</td></tr>
-        <tr><td class="code">10</td><td>The two output commitments differ.</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="note">The <a href="https://github.com/soispoke/evm-spend-challenge/blob/main/SPEC.md">specification</a> gives the exact input layout and hash definitions.</p>
-</section>
-
-<section aria-labelledby="scoring">
-  <h2 id="scoring">Scoring</h2>
-  <ol class="plain">
-    <li>The entry returns the expected digest for each of the 20 valid public test cases and returns nothing for each of the 39 invalid ones.</li>
-    <li>It does the same on new test cases generated from fresh random seeds at scoring time.</li>
-    <li>Every valid case is run on the fixed version of leanVM. The padded trace size must be the same for all valid inputs, because the proof reveals it.</li>
-    <li>The score is the largest cycle count over the valid cases. Lower is better.</li>
-  </ol>
-  <p>The invalid test cases cover every rule: removing any one rule check from any of the three entries makes a test fail. Entries are EVM bytecode, so other RISC-V zkVMs could prove both versions on the same machine to compare proof times, but the score comes only from the fixed leanVM version. Final timings should use zero knowledge, which Jolt supports and this leanVM version does not.</p>
-</section>
-
-<section aria-labelledby="beyond">
-  <h2 id="beyond">Beyond this challenge</h2>
-  <p>Two questions matter for EIP-8288 that the score does not settle.</p>
-  <p><strong>Changing the interpreter.</strong> The measurements above show that a better interpreter closes most of the gap. Swapping it changes no program, since programs are named by their bytecode, but it is a verifier upgrade: a proof shows that one specific interpreter build ran the program, so verifiers must trust that build to follow the EVM rules exactly. A second round could let entrants optimize the interpreter, with the tests against REVM as the correctness gate.</p>
-  <p><strong>Stable meaning for immutable programs.</strong> A privacy pool's program must mean the same thing forever. The pool would name it by EVM version and bytecode hash, and the EVM used for proofs would change only by adding opcodes and precompiles in new versions, without gas metering. EVM implementations already keep every past fork's rules, so old versions stay cheap to support. The RISC-V base instruction set is already frozen.</p>
-</section>
-
-<section aria-labelledby="open">
-  <h2 id="open">Still to decide</h2>
-  <p>What counts as close enough (proof time and peak memory with zero knowledge on a named laptop), how the hidden test seeds are chosen, whether other zkVMs count toward the score, and whether a second round targets the interpreter.</p>
-</section>
-
-<footer>
-  <div>Specification, results and code: <a href="https://github.com/soispoke/evm-spend-challenge">github.com/soispoke/evm-spend-challenge</a>. Research code, not audited.</div>
-</footer>
+<footer>Specification, results and code: <a href="https://github.com/soispoke/evm-spend-challenge">github.com/soispoke/evm-spend-challenge</a>. Research code, not audited.</footer>
 
 </main>
 
 <script>
 (() => {
-  // Measured leanVM RV64IM cycles outside SHA-256, per entry and way of running
-  // it. SHA-256 is the same code in both versions: 447,399 cycles for 105
-  // compressions.
-  const HASH = 447399;
-  const C_MAX = 4261;
-  const NATIVE_OTHER = 13072;
-  const OTHER = {
-    solidity: { revm: 778211, fast: 447880, compiled: 158537 },
-    yul:      { revm: 178322, fast: 73131,  compiled: 35645 },
-    bytecode: { revm: 168572, fast: 57523,  compiled: 13960 },
+  // Measured on leanVM: [cycles, median proof seconds]. Proof time is null where the
+  // trace exceeds leanVM's size limit of 2^28 words.
+  const SHA = { compiled: [461359, 0.8116], fast: [504922, 0.8815], revm: [615971, 0.9466] };
+  const B2 = { compiled: [57846, 0.1078], fast: [103065, 0.1972], revm: [202548, 0.2455] };
+  const GROUPS = [
+    { title: "SHA-256 in software on both sides",
+      note: "What L1 offers today: the EVM calls SHA-256 at 0x02, and leanVM has no SHA-256 instruction.",
+      riscv: ["RISC-V, SHA-256 in software", 460471, 0.5901], evm: SHA },
+    { title: "BLAKE2s accelerated on both sides",
+      note: "RISC-V uses leanVM's blake2s instruction. The EVM calls a BLAKE2s precompile served by the same instruction; L1 has no such precompile.",
+      riscv: ["RISC-V, blake2s instruction", 52676, 0.0852], evm: B2 },
+    { title: "Only RISC-V accelerated",
+      note: "Without a BLAKE2s precompile, the EVM hashes with SHA-256 at 0x02 in software, while RISC-V uses the instruction.",
+      riscv: ["RISC-V, blake2s instruction", 52676, 0.0852], evm: SHA },
+    { title: "Only the EVM accelerated",
+      note: "RISC-V programs limited to the base RV64IM instructions compute BLAKE2s in software, while the EVM's BLAKE2s precompile uses the instruction.",
+      riscv: ["RISC-V, base instructions", 344072, 0.3789], evm: B2 },
+    { title: "BLAKE2s written in EVM code",
+      note: "With no precompile, the hash runs as EVM instructions. These traces exceed leanVM's size limit, so there are no proofs.",
+      riscv: ["RISC-V, blake2s instruction", 52676, 0.0852],
+      evm: { compiled: [5844806, null], fast: [56136848, null], revm: [76776443, null] } },
+  ];
+  const MODES = [
+    ["compiled", "EVM, compiled ahead of time", "var(--bar-compiled)"],
+    ["fast", "EVM, interpreter for proving", "var(--bar-fast)"],
+    ["revm", "EVM, REVM", "var(--bar-revm)"],
+  ];
+  const AXIS = {
+    cycles: { max: 650000, ticks: [0, 200000, 400000, 600000], label: (v) => v ? v / 1000 + "k" : "0" },
+    time: { max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], label: (v) => v + " s" },
   };
-  const SCALE = HASH + OTHER.solidity.revm;   // 1,225,610, the Solidity baseline under REVM
 
-  const $ = (id) => document.getElementById(id);
-  const fmt = (n) => Math.round(n).toLocaleString("en-US");
-  const hashcost = $("hashcost");
-  const entryButtons = Array.from(document.querySelectorAll("[data-entry]"));
-  const runButtons = Array.from(document.querySelectorAll("[data-run]"));
-  let entry = "bytecode", run = "revm";
-  const width = (el, v) => { el.style.width = (100 * v / SCALE) + "%"; el.hidden = v === 0; };
+  const cycles = (v) => v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 1 : 2) + " M" : v.toLocaleString("en-US");
+  const seconds = (v) => (v < 0.3 ? v.toFixed(3) : v.toFixed(2)) + " s";
+  const ratio = (r) => (r < 10 ? r.toFixed(2) : r < 100 ? r.toFixed(1) : Math.round(r).toLocaleString("en-US")) + "×";
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 
-  function render() {
-    const c = Number(hashcost.value);
-    const hash = c === C_MAX ? HASH : 105 * c;
-    const other = OTHER[entry][run];
-    const native = hash + NATIVE_OTHER;
-    const evm = hash + other;
-    width($("n-hash"), hash);
-    width($("n-other"), NATIVE_OTHER);
-    width($("e-hash"), hash);
-    width($("e-other"), other);
-    $("native-total").textContent = fmt(native);
-    $("evm-total").textContent = fmt(evm);
-    $("hashcost-value").textContent = fmt(c) + " cycles";
-    $("ratio").textContent = (evm / native).toFixed(2) + "×";
-    $("extra").textContent = fmt(evm - native);
-    const measured = c === C_MAX;
-    const status = $("status");
-    status.className = "status " + (measured ? "measured" : "estimate");
-    status.textContent = measured ? "Measured" : "Estimate from the measured numbers";
-    entryButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.entry === entry)));
-    runButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.run === run)));
+  const groupsEl = document.getElementById("groups");
+  const axisEl = document.getElementById("axis");
+  const buttons = Array.from(document.querySelectorAll("[data-metric]"));
+  let metric = "cycles";
+
+  function row(label, color, value, base) {
+    const r = el("div", "row");
+    r.append(el("span", "row-label", label));
+    const track = el("div", "track");
+    track.setAttribute("aria-hidden", "true");
+    const axis = AXIS[metric];
+    axis.ticks.forEach((t) => { const g = el("i", "gridline"); g.style.left = (100 * t / axis.max) + "%"; track.append(g); });
+    const out = el("div", "value");
+    if (value === null) {
+      out.append(el("span", "none", "no proof"));
+    } else {
+      const bar = el("i", "bar" + (value > axis.max ? " off-scale" : ""));
+      bar.style.background = color;
+      bar.style.width = Math.min(100, 100 * value / axis.max) + "%";
+      track.append(bar);
+      out.append(el("span", "", metric === "cycles" ? cycles(value) : seconds(value)));
+      if (base) out.append(el("b", "", ratio(value / base)));
+    }
+    r.append(track, out);
+    return r;
   }
 
-  entryButtons.forEach((b) => b.addEventListener("click", () => { entry = b.dataset.entry; render(); }));
-  runButtons.forEach((b) => b.addEventListener("click", () => { run = b.dataset.run; render(); }));
-  hashcost.addEventListener("input", render);
+  function render() {
+    const i = metric === "cycles" ? 0 : 1;
+    const axis = AXIS[metric];
+    axisEl.replaceChildren(...axis.ticks.map((t) => {
+      const s = el("span", "", axis.label(t));
+      s.style.left = (100 * t / axis.max) + "%";
+      return s;
+    }));
+    groupsEl.replaceChildren(...GROUPS.map((g) => {
+      const box = el("div", "group");
+      const head = el("div", "group-head");
+      head.append(el("h3", "", g.title), el("p", "", g.note));
+      box.append(head);
+      const base = g.riscv[1 + i];
+      box.append(row(g.riscv[0], "var(--bar-riscv)", base, null));
+      MODES.forEach(([key, label, color]) => box.append(row(label, color, g.evm[key][i], base)));
+      return box;
+    }));
+    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.metric === metric)));
+  }
+
+  buttons.forEach((b) => b.addEventListener("click", () => { metric = b.dataset.metric; render(); }));
   render();
 })();
 </script>
+</html>
