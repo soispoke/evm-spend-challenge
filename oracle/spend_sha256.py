@@ -379,6 +379,18 @@ def invalid_catalog(rng: random.Random) -> list:
     spend = build(rng, (700, 300), (500, 500))
     spend.outputs[1].inner = spend.outputs[0].inner
     add("outputs-equal", "distinct_outputs", spend)
+
+    # Appended so that the draws above, and every earlier case, stay unchanged.
+    # A funded note with a high index bit still opens its path, which uses only
+    # the low 20 bits, but hashes a different occurrence: a second nullifier
+    # for the same leaf, so the range check must hold for both inputs.
+    for k in range(2):
+        spend = copy.deepcopy(base)
+        spend.inputs[k].index |= MAX_INDEX
+        add(f"index-range-input{k}-high-bit", "index_range", spend)
+    spend = build(rng, (700, 300), (0, 950), fee=50)
+    spend.outputs[0].inner = SINK[1]
+    add("zero-output0-wrong-position-sink", "zero_output_sink", spend)
     return cases
 
 

@@ -1,0 +1,52 @@
+{
+ "entry": "BLAKE2s edition spend, BLAKE2s in EVM opcodes packed four lanes per word (evm/blake2s/packed.py)",
+ "hash_test": "400 random messages of 0 to 400 bytes match hashlib.blake2s under REVM (hashcheck.json: no evm-route failures)",
+ "spend_checks": "public BLAKE2s cases and hidden seeds 11 and 12 pass, native and EVM",
+ "gas_used": 1231197,
+ "evm_opcodes_executed": 410140,
+ "bytecode_bytes": 13504,
+ "straightforward": {
+  "gas_used": 2752716,
+  "evm_opcodes_executed": 905870,
+  "bytecode_bytes": 18500,
+  "max_cycles": {
+   "compiled": 5844806,
+   "fast": 56136848,
+   "revm": 76776443
+  }
+ },
+ "cycles": {
+  "compiled": {
+   "max_cycles": 6767420,
+   "padded_cycles": [
+    9439256
+   ],
+   "witness_log_size": [
+    29
+   ],
+   "committed_words": 402653184
+  },
+  "fast": {
+   "max_cycles": 26858924,
+   "padded_cycles": [
+    33557520
+   ],
+   "witness_log_size": [
+    31
+   ],
+   "committed_words": 1409286144
+  },
+  "revm": {
+   "max_cycles": 35892562,
+   "padded_cycles": [
+    50348048
+   ],
+   "witness_log_size": [
+    32
+   ],
+   "committed_words": 2214592512
+  }
+ },
+ "cases": "three valid public cases; the spend has a fixed shape",
+ "repo": "d72de14 plus evm/blake2s/packed.py; built in a clean clone"
+}

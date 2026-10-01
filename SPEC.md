@@ -6,7 +6,7 @@ Submit the EVM bytecode that checks a privacy-pool spend in the fewest RISC-V cy
 
 ## The question
 
-EIP-8288 lets transactions carry proofs that Ethereum verifies. A privacy application's proof shows that a program accepted a spend: the program reads the private data (keys, notes, Merkle paths) and the public values, checks the pool's rules, and outputs a hash of the public values. If that program costs about as much to prove as EVM bytecode as it does compiled to RISC-V, applications could keep writing it in EVM bytecode, which weakens the performance case for letting them use RISC-V directly. Letting entrants optimize the EVM program measures the best achievable cost rather than the cost of one implementation.
+Under EIP-8288, a frame transaction declares each proof it depends on by a scheme, a public-input hash and a verification-key hash, and each block carries one recursive STARK that proves all its transactions' dependencies. A privacy application's proof shows that a program accepted a spend: the program reads the private data (keys, notes, Merkle paths) and the public values, checks the pool's rules, and outputs a hash of the public values. If that program costs about as much to prove as EVM bytecode as it does compiled to RISC-V, applications could keep writing it in EVM bytecode, which weakens the performance case for letting them use RISC-V directly. Letting entrants optimize the EVM program measures the best submitted cost rather than the cost of one implementation.
 
 The statement uses SHA-256 throughout, because the EVM already provides it as precompile `0x02`. No new precompile is assumed. The interpreter also permits ordinary pure opcodes, including `KECCAK256`; auxiliary computations do not change the required SHA-256 statement digest.
 
@@ -16,7 +16,7 @@ An entry is EVM runtime bytecode (`bytecode.hex`) with its source and build inst
 
 ## The statement
 
-The statement is the minimal shielded pool's current [spend circuit](https://github.com/soispoke/minimal-shielded-pool/blob/08bb03412e90c3ef79145bc6627d739aaea34dc3/circuits/spend.circom): two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee, with nullifiers bound to the note's leaf position. This version uses SHA-256 instead of Poseidon, fixed-width byte fields instead of field elements, and a one-byte tag at the start of every hashed message. Root freshness, nullifier reuse, the authorizer's signature and settlement remain on-chain checks, as in the pool.
+The statement follows the rules of the minimal shielded pool's current [spend circuit](https://github.com/soispoke/minimal-shielded-pool/blob/08bb03412e90c3ef79145bc6627d739aaea34dc3/circuits/spend.circom): two input notes in a 20-level Merkle tree, two output notes, a public amount and a fee, with nullifiers bound to the note's leaf position. This version uses SHA-256 instead of Poseidon, fixed-width byte fields instead of field elements, a one-byte tag at the start of every hashed message, and one digest of the public values instead of the circuit's public signals. Root freshness, the binding of `domain` to the chain, the pool and the tree epoch, nullifier reuse, the authorizer's signature and settlement remain on-chain checks, as in the pool. Without the domain check, each new `domain` value would give the same note a fresh nullifier.
 
 ### Input
 
@@ -80,16 +80,16 @@ The [Python oracle](oracle/spend_sha256.py) and the [Rust reference](statement/s
 
 An entry is scored only if it passes both sets of tests:
 
-1. The 59 [public test cases](fixtures/public.json): it returns the expected digest for each of the 20 valid inputs and does not return for any of the 39 invalid inputs, each of which breaks exactly one rule.
+1. The 62 [public test cases](fixtures/public.json): it returns the expected digest for each of the 20 valid inputs and does not return for any of the 42 invalid inputs, each of which breaks exactly one rule.
 2. New test cases generated from fresh random seeds at scoring time: random valid spends and a regenerated set of invalid inputs.
 
-The invalid cases cover every rule: removing any one rule check from any of the three entries makes at least one public case fail.
+The invalid cases cover every rule: removing any one rule check from any of the three entries makes at least one public case fail. Rule 1 is tested on each input with a funded note whose index is 2^20 or more. Only bits 0 to 19 steer the Merkle path, so such a note still reaches `root`, but its nullifier differs, and accepting it would let the same note be spent twice.
 
 ### Score
 
 The score is the largest RV64IM cycle count over the measured valid test cases, as counted by the fixed leanVM executor. Lower is better. The full vector of padded table sizes must be identical across those cases, because the proof reveals it; otherwise the entry is rejected. A shortcut that improves only cases below the measured maximum does not lower the score. Contract size limits do not apply, because the bytecode is a proved program and is never deployed.
 
-The shape check is finite validation, not a proof that every valid input has the same shape or a privacy guarantee. The pinned leanVM has no zero knowledge and also publishes a final execution timestamp. A production private prover needs a separate leakage analysis.
+The shape check is finite validation, not a proof that every valid input has the same shape or a privacy guarantee. The pinned leanVM has no zero knowledge and also publishes the final clock, which grows with the cycle count; on the public cases, the reference's count reveals whether a spend has a dummy input. A production private prover needs a separate leakage analysis.
 
 ### Fixed setup
 
@@ -115,7 +115,7 @@ Gas is reported for comparison with gas-scored challenges such as precompile.fas
 
 Entries are EVM bytecode, so they do not depend on a particular prover. Other RISC-V zkVMs can prove both versions on the same machine to compare proof times, through an adapter that runs the same two programs, but the score comes only from the fixed leanVM executor. Compare the two versions only on the same prover and hardware. Many zkVMs use 32-bit RISC-V while this machine is 64-bit, so their cycle counts differ.
 
-No separate zero-knowledge EVM prover is needed: an EVM interpreter proved by a RISC-V zkVM with zero knowledge is one. Final proof timings should use zero knowledge, since wallets will prove that way. Jolt supports it; the fixed leanVM version does not yet.
+No separate zero-knowledge EVM prover is needed: an EVM interpreter proved by a RISC-V zkVM with zero knowledge is one. Final proof timings should use zero knowledge, since wallets will prove that way; the fixed leanVM version does not support it yet.
 
 ## Before launch
 

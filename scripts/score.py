@@ -36,8 +36,11 @@ def run_json_lines(command):
 def build_guest(bytecode_hex: str):
     (ROOT / "guests/evm/bytecode.bin").write_bytes(bytes.fromhex(bytecode_hex))
     env = dict(os.environ, PATH=f"{TOOLCHAIN / 'bin'}:{os.environ['PATH']}", DYLD_LIBRARY_PATH=str(TOOLCHAIN / "lib"))
-    subprocess.run(["cargo", "build", "--release", "--offline", "-p", "spend-evm-guest"],
-                   cwd=ROOT / "guests", env=env, check=True, capture_output=True)
+    build = subprocess.run(["cargo", "build", "--release", "--offline", "-p", "spend-evm-guest"],
+                           cwd=ROOT / "guests", env=env, capture_output=True, text=True)
+    if build.returncode != 0:
+        sys.stderr.write(build.stdout + build.stderr)
+        raise SystemExit("building the EVM guest failed; cargo's output is above")
 
 
 def main() -> int:
@@ -48,6 +51,11 @@ def main() -> int:
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     bytecode_hex = Path(args.bytecode).read_text().strip()
+    if bytecode_hex.lower().removeprefix("0x").startswith("ef"):
+        # L1 rejects new code starting with 0xEF (EIP-3541), and REVM would parse
+        # 0xEF01 as an EIP-7702 delegation instead of running it.
+        print(json.dumps({"accepted": False, "reason": "bytecode starts with 0xEF"}))
+        return 1
     seeds = args.hidden_seeds if args.hidden_seeds is not None else [secrets.randbits(32) for _ in range(2)]
 
     with tempfile.TemporaryDirectory() as tmp:

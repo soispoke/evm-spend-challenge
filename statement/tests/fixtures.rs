@@ -19,7 +19,7 @@ fn cases_in(file: &str) -> Vec<serde_json::Value> {
 #[test]
 fn matches_oracle_on_public_cases() {
     let cases = cases();
-    assert_eq!(cases.len(), 59);
+    assert_eq!(cases.len(), 62);
     for case in &cases {
         let name = case["name"].as_str().unwrap();
         let result = verify(&unhex(case["input"].as_str().unwrap()));
@@ -52,7 +52,7 @@ fn blake2s_matches_known_digests() {
 #[test]
 fn blake2s_edition_matches_oracle() {
     let cases = cases_in("public-blake2s.json");
-    assert_eq!(cases.len(), 59);
+    assert_eq!(cases.len(), 62);
     for case in &cases {
         let name = case["name"].as_str().unwrap();
         let result = verify_with::<Blake2sHash>(&unhex(case["input"].as_str().unwrap()));

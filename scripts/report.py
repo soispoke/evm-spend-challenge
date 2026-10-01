@@ -134,7 +134,7 @@ def main() -> int:
         "proving_conditions": "transfer case; per program and round one warmup and two timed proofs, interleaved; "
                               f"Apple M5 Max, {setup['power'][0] if setup['power'] else 'power unknown'}; no zero knowledge",
         "validation": {
-            "public_cases": {"cases": 59, "valid": 20, "invalid": 39,
+            "public_cases": {"cases": 62, "valid": 20, "invalid": 42,
                              "rejected_on_leanvm": {k: len(ex[k]["failures"]) == 0 for k in ("riscv", *ENTRIES)}},
             "hidden_seeds": {"scored": {k: v["hidden_seeds"] for k, v in scores.items()},
                              "checked": sorted({h["seed"] for h in hidden}),

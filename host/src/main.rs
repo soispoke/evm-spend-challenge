@@ -85,6 +85,13 @@ fn check(args: &Args) -> ExitCode {
     // `--hash blake2s` checks the BLAKE2s edition: the Rust statement with BLAKE2s,
     // and EVM candidates under REVM with a BLAKE2s precompile at 0xb2.
     let blake2s = args.value("--hash").as_deref() == Some("blake2s");
+    if bytecode.as_ref().is_some_and(|code| code.first() == Some(&0xEF)) {
+        // L1 rejects new code starting with 0xEF (EIP-3541); REVM would parse
+        // 0xEF01 as an EIP-7702 delegation instead of running it.
+        println!("{}", json!({"cases": cases.len(), "evm_checked": false,
+            "failures": [{"case": "*", "route": "evm", "result": "bytecode starts with 0xEF"}]}));
+        return ExitCode::FAILURE;
+    }
     let mut failures = Vec::new();
     for case in &cases {
         let name = case["name"].as_str().unwrap();
