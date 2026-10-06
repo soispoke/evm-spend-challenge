@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wrapping Benchmark</title>
+<style>
+:root {
+  --bg: #FFFFFF; --surface: #F7F7F7; --border: #E7E7E7;
+  --ink: #121212; --ink-2: #515151; --ink-3: #6B6B6B; --accent: #6C24DF;
+  --grid: #E7E7E7;
+  --s-riscv: #0D9488; --s-byte: #6C24DF; --s-sol: #D9561F; --heat: #2a78d6;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121212; --surface: #1A1A19; --border: #333333;
+  --ink: #F7F7F7; --ink-2: #CECECE; --ink-3: #8C8C8C; --accent: #B38DF0;
+  --grid: #333333;
+  --s-riscv: #2EA39A; --s-byte: #945AF4; --s-sol: #D9561F; --heat: #3987e5;
+} }
+:root[data-theme="dark"] {
+  --bg: #121212; --surface: #1A1A19; --border: #333333;
+  --ink: #F7F7F7; --ink-2: #CECECE; --ink-3: #8C8C8C; --accent: #B38DF0;
+  --grid: #333333;
+  --s-riscv: #2EA39A; --s-byte: #945AF4; --s-sol: #D9561F; --heat: #3987e5;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 Inter, -apple-system, "Segoe UI", system-ui, sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 28px 16px 64px; }
+header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.eyebrow { font: 600 12px/1.4 "IBM Plex Mono", ui-monospace, Menlo, monospace; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.12; margin: 0 0 8px; letter-spacing: -.02em; }
+.sub { font-size: 15px; color: var(--ink-2); margin: 0; max-width: 84ch; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); font-weight: 600; margin: 28px 0 10px; }
+p { margin: 0; color: var(--ink-2); }
+.note { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; line-height: 1.45; }
+code { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: .9em; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+@media (max-width: 1023px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 559px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+.tiles.t3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 899px) { .tiles.t3 { grid-template-columns: minmax(0, 1fr); } }
+.tiles.t2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 699px) { .tiles.t2 { grid-template-columns: minmax(0, 1fr); } }
+.lead2 { font-size: 14px; color: var(--ink-2); margin: 0; max-width: 92ch; }
+h2.part { font-size: 20px; text-transform: none; letter-spacing: -.01em; color: var(--ink); font-weight: 650;
+  margin: 40px 0 6px; padding-top: 24px; border-top: 1px solid var(--border); }
+h2.part.first { border-top: 0; padding-top: 0; margin-top: 28px; }
+.tbl-title { font-size: 13px; font-weight: 600; color: var(--ink); margin: 16px 0 8px; }
+.wide-card { margin-top: 16px; }
+.takeaways { display: grid; gap: 8px; }
+.tk { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; align-items: baseline; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; }
+.tk-v { font-size: 22px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.tk-t { font-size: 14.5px; color: var(--ink-2); line-height: 1.5; }
+@media (max-width: 599px) { .tk { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 28px; }
+@media (max-width: 999px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.legend svg { flex: none; }
+.route-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 20px; }
+@media (max-width: 899px) { .route-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 499px) { .route-kpis { grid-template-columns: minmax(0, 1fr); } }
+.route-kpis .kpi { background: var(--surface); }
+.route-kpis .kpi .v { font-size: 22px; letter-spacing: -.01em; }
+table.heat { font-size: 12px; }
+table.heat th { text-align: center; vertical-align: bottom; line-height: 1.3; text-transform: none; letter-spacing: 0; font-size: 11.5px; }
+table.heat th.l { text-align: left; }
+table.heat th svg { display: inline-block; }
+table.heat td { text-align: center; padding: 6px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.heat td b { display: block; font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
+table.heat td span { display: block; font-size: 10.5px; opacity: .78; font-variant-numeric: tabular-nums; }
+table.heat td.na { color: var(--ink-3); opacity: .5; }
+table.heat td.base { background: var(--surface); }
+table.heat td.rowname { text-align: left; font-weight: 600; white-space: normal; min-width: 120px; }
+.rng { display: block; font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+.route-key { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px 22px; margin: 6px 0 4px; }
+.rk { display: grid; grid-template-columns: 16px 1fr; column-gap: 7px; align-content: start; font-size: 12.5px; line-height: 1.35; }
+.rk svg { margin-top: 2px; }
+.rk b { font-weight: 650; color: var(--ink); }
+.rk span { grid-column: 2; color: var(--ink-3); }
+.conclusion { font-size: 15px; line-height: 1.5; color: var(--ink); background: var(--surface); border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0 8px; }
+.key-note { font-size: 12px; color: var(--ink-3); margin: 6px 0 12px; line-height: 1.45; }
+td.l svg { vertical-align: -2px; }
+.tile, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.tile .k { font-size: 13px; font-weight: 600; }
+.tile .v { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tile .cap { font-size: 12px; color: var(--ink-3); margin-bottom: 8px; }
+.rows > div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--border); }
+.rows span { color: var(--ink-3); }
+.rows b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+@media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+figure { margin: 0; }
+.fig-title { font-weight: 600; font-size: 15px; color: var(--ink); margin: 0 0 2px; }
+.fig-sub { font-size: 12.5px; color: var(--ink-3); margin: 0 0 10px; }
+figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 8px; line-height: 1.45; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); margin: 0 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.legend i.dot { background: var(--ink-2); }
+.legend i.ring { background: transparent; border: 2px solid var(--ink-2); }
+.legend i.dash { width: 14px; height: 0; border-radius: 0; border-top: 2px dashed var(--s-riscv); }
+.legend i.diamond { background: var(--s-riscv); border-radius: 1px; transform: rotate(45deg); width: 9px; height: 9px; }
+.legend i.sq { background: var(--ink-2); border-radius: 2px; width: 9px; height: 9px; }
+.legend i.sq.hollow { background: transparent; border: 2px solid var(--ink-2); }
+svg text { font-family: Inter, -apple-system, system-ui, sans-serif; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 4px 0 12px; }
+.kpi { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.kpi .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi .s { font-size: 12px; color: var(--ink-3); line-height: 1.35; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th:first-child, td:first-child, th.l, td.l { text-align: left; }
+thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-3); font-weight: 600;
+  background: var(--surface); white-space: normal; vertical-align: bottom; }
+tbody tr:last-child td { border-bottom: 0; }
+td.w { white-space: normal; min-width: 150px; text-align: left; }
+ul.plain { padding-left: 18px; margin: 8px 0 0; color: var(--ink-2); font-size: 13.5px; }
+ul.plain li { margin-bottom: 6px; }
+details { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-top: 12px; }
+details > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink); }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12.5px;
+  line-height: 1.4; padding: 8px 10px; border-radius: 8px; max-width: 300px; opacity: 0; transition: opacity .1s; z-index: 10; }
+.theme { flex: none; background: var(--surface); color: var(--ink-2); border: 1px solid var(--border); border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer; }
+footer { font-size: 12px; color: var(--ink-3); margin-top: 24px; }
+</style>
+
+<style>
+.series { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--ink-2); margin: 0 0 8px; }
+.series span { display: inline-flex; align-items: center; gap: 6px; }
+.tk-t b { color: var(--ink); font-weight: 650; }
+.series i.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+/* The parts of the old verifier: categorical slots the routes do not use (validated), the rest in gray. */
+:root { --p-prog: #e87ba4; --p-flock: #eda100; --p-proof: #2a78d6; --p-rest: #b3b3b3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --p-prog: #d55181; --p-flock: #c98500; --p-proof: #3987e5; --p-rest: #5c5c5c; } }
+:root[data-theme="dark"] { --p-prog: #d55181; --p-flock: #c98500; --p-proof: #3987e5; --p-rest: #5c5c5c; }
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+  <div>
+    <p class="eyebrow">Benchmark · 6 October 2026 · one M5 Max laptop</p>
+    <h1>What wrapping a proof costs</h1>
+    <p class="sub">Wrapping, from <i>Exposing an ISA for post-quantum privacy</i> (h/t Vitalik): when the prover changes, users keep proving with the old prover, then make a second proof in the new system showing that the old verifier accepts the first. How much does that second proof cost? We measured it two ways on leanVM: running an earlier version's verifier as an ordinary program of the current version, and checking a proof in leanVM's recursion machine, a circuit built to check its own proofs.</p>
+  </div>
+  <button class="theme" id="theme" type="button" aria-label="Toggle color theme">Theme</button>
+</header>
+
+<h2 class="part first">Takeaways</h2>
+<div class="takeaways"><div class="tk"><div class="tk-v">11–22×</div><div class="tk-t"><b>As a program, the old verifier does not fit in one proof.</b> leanVM 1096dedf's verifier, run in leanVM 7532d46, takes 75.3M to 139.1M cycles to check one proof of the four statements. Its witness, 2^31.47 to 2^32.47 words, is 11 to 22 times what one proof holds, and leanVM cannot split a run across proofs, so this wrap cannot be proved today.</div></div><div class="tk"><div class="tk-v">6.5–12×</div><div class="tk-t"><b>It costs more than checking a Groth16 proof.</b> A Groth16 verifier written for the same machine (leanVM PR 499) takes 11.6M cycles and also misses one proof (2^28.88 words); the old leanVM verifier takes 6.5 to 12.0 times that. Even its part that only checks the proof, the WHIR opening, ring switching, sumchecks and hashing, takes 26.1M to 30.7M.</div></div><div class="tk"><div class="tk-v">25.0M–83.4M</div><div class="tk-t"><b>Most of the cost comes from the old program, not from how long it ran.</b> Reading the old program and proof and evaluating the program's columns takes 25.0M to 83.4M cycles, and the Flock circuits, fixed by the version, 16.2M. Committing each program once in a key (leanVM PR 418) would replace most of the program's part with one opening, for proofs made after it.</div></div><div class="tk"><div class="tk-v">0.13–0.15 s</div><div class="tk-t"><b>In the recursion machine, wrapping is cheap.</b> It takes 0.133 s to 0.149 s for any leaf (0.087 s to 0.096 s with a circuit sized for wrapping only) and adds 8% to 63% to the user's proving time. But it checks proofs of its own version only, and leaves the program and Flock checks to the final verifier.</div></div></div>
+<p class="conclusion">So wrapping does not let later forks forget the old system; it changes what they keep. Wrapping cheaply means every later recursion machine keeps a circuit for each old verifier, and users wrap their own old proofs so that mempool nodes need no old verifier. The recursion machine itself can still change at a fork: wrap proofs are made fresh for each transaction, so wallets just wrap with the new one.</p>
+
+<figure class="card wide-card">
+  <p class="fig-title">The second proof against what one proof holds</p>
+  <p class="fig-sub">Committed words, log scale · the dashed line is one leanVM proof (2^28)</p>
+  <div class="series" id="key0"></div>
+  <div id="fig-cap"></div>
+  <figcaption>Exact committed words: the recursion machine's from its circuits, the programs' from counting their runs to the end (leanVM refuses them before proving), the Groth16 verifier's from leanVM PR 499. The old verifier checks 1096dedf proofs; the recursion machine checks proofs of its own version and leaves the program and Flock checks to the final verifier.</figcaption>
+</figure>
+
+<h2 class="part">The old verifier as a program</h2>
+<figure class="card wide-card">
+  <p class="fig-title">Where the old verifier's cycles go</p>
+  <p class="fig-sub">Millions of cycles to check one old proof · the Groth16 verifier for scale</p>
+  <div class="series" id="keyb"></div>
+  <div id="fig-break"></div>
+  <figcaption>Cycles of the old verifier run as a program, for the smallest and the largest old program. Reading the old program and proof is exact, from a build that stops there; the other parts group the functions of a profile and are approximate. The exact rows are in the table below.</figcaption>
+</figure>
+<p class="tbl-title">The four old proofs</p>
+<div class="tbl-wrap"><table id="tbl-guest"><thead><tr><th>Old proof</th><th>Its own cycles</th><th>Old verifier as a program</th><th>Times its own cycles</th><th>Committed words</th><th>Times one proof</th><th>Reading the program and proof alone</th></tr></thead><tbody><tr><td class="w">Shielded transfer</td><td>460,471</td><td>75,301,564</td><td>164×</td><td>2,972,322,944 (2^31.47)</td><td>11.1×</td><td>14,988,465</td></tr><tr><td class="w">secp256k1 signature</td><td>2,471,418</td><td>139,080,505</td><td>56×</td><td>5,954,997,376 (2^32.47)</td><td>22.2×</td><td>54,569,873</td></tr><tr><td class="w">Private L1 state proof</td><td>967,578</td><td>77,102,912</td><td>80×</td><td>2,972,322,944 (2^31.47)</td><td>11.1×</td><td>15,212,354</td></tr><tr><td class="w">Falcon-512 signature</td><td>486,756</td><td>77,135,207</td><td>158×</td><td>2,972,322,944 (2^31.47)</td><td>11.1×</td><td>14,841,427</td></tr><tr><td class="w">Groth16 verifier (PR 499)</td><td></td><td>11,591,801</td><td></td><td>493,957,744 (2^28.88)</td><td>1.8×</td><td></td></tr></tbody></table></div>
+<p class="tbl-title">Each part, in cycles</p>
+<div class="tbl-wrap"><table id="tbl-break"><thead><tr><th>Part of the old verifier</th><th>Shielded transfer</th><th>secp256k1</th></tr></thead><tbody><tr><td class="w">Parsing the old program and proof</td><td>14,988,465</td><td>54,569,873</td></tr><tr><td class="w">WHIR opening and ring switching</td><td>16,667,141</td><td>20,615,547</td></tr><tr><td class="w">Flock circuits’ matrices and reductions</td><td>16,163,233</td><td>16,170,203</td></tr><tr><td class="w">The program’s public columns and their evaluation</td><td>9,974,423</td><td>28,812,680</td></tr><tr><td class="w">The bus, the sumchecks and the transcript</td><td>6,212,083</td><td>6,279,484</td></tr><tr><td class="w">Hashing (Merkle paths and the transcript)</td><td>3,180,729</td><td>3,779,831</td></tr><tr><td class="w">Memory copies and the rest</td><td>8,115,490</td><td>8,852,887</td></tr><tr><td class="w"><b>Total</b></td><td><b>75,301,564</b></td><td><b>139,080,505</b></td></tr></tbody></table></div>
+<p class="note">Cycles. Parsing is exact, from a build that stops after reading the old program (decoding it, building and checking its bytecode table, hashing it into the program digest) and deserializing the proof; the parts of the verification are grouped by function from a profile and are approximate. The two programs have 55,464 and 207,496-byte ELFs. The port changes 1096dedf's verifier only where it computes: field products on the new machine's <code>extmul</code> instructions, BLAKE2s on its <code>blake2s</code> instruction, one thread, the bit transpose by 64x64 word blocks and the WHIR configuration from a table checked against its derivation. Before the last two, the shielded transfer's wrap took 178,869,270 cycles, more than half in the bit-by-bit transpose.</p>
+
+<h2 class="part">The recursion machine</h2>
+<figure class="card wide-card">
+  <p class="fig-title">Proof time of the leaf and of its wrap</p>
+  <p class="fig-sub">Seconds, log scale · median over rounds</p>
+  <div class="series" id="key1"></div>
+  <div id="fig-time"></div>
+  <figcaption>Median of 3 rounds. Each leaf is proved, then wrapped by a first-level node over that one leaf (<code>arity_0 = 1</code>), in one process. Upstream's tree builds the node at the heights its two-child nodes need, so its wrap proofs can be aggregated further; the wrap-only circuit takes the first level's own heights (a local patch) and its proofs cannot. The wrap's time includes running the native verifier on the leaf before building the rows.</figcaption>
+</figure>
+
+<figure class="card wide-card">
+  <p class="fig-title">The wrap's size does not depend on the leaf</p>
+  <p class="fig-sub">Committed words against the leaf's cycles, log scales · Fibonacci sweep as lines, the four programs as points</p>
+  <div class="series" id="key2"></div>
+  <div id="fig-size"></div>
+  <figcaption>Committed words of the leaf proof and of its wrap, exact counts from the circuits. Across the Fibonacci sweep the wrap circuit's largest table grows from 34,668 to 54,980 rows of extension-field multiplication, inside the same padded height.</figcaption>
+</figure>
+
+<section class="card wide-card">
+  <p class="fig-title">Wrapping one proof or aggregating several</p>
+  <p class="fig-sub">First-level nodes of upstream's tree over copies of the shielded transfer's proof</p>
+  <div class="kpis"><div class="kpi"><div class="v">0.134 s</div><div class="s">node over 1 shielded transfer: 0.134 s per leaf, 9,569,280 words</div></div><div class="kpi"><div class="v">0.148 s</div><div class="s">node over 2 shielded transfers: 0.074 s per leaf, 10,159,104 words</div></div><div class="kpi"><div class="v">0.265 s</div><div class="s">node over 4 shielded transfers: 0.066 s per leaf, 20,318,208 words</div></div></div>
+</section>
+<p class="tbl-title">All measurements</p>
+<div class="tbl-wrap"><table id="tbl"></table></div>
+
+<h2>Caveats</h2>
+<ul class="plain"><li>The recursion machine's wrap verifies proofs of its own version. Wrapping an older version there would need the older verifier's rows in the newer machine, and in its final verifier the older bytecode encoding and Flock matrices it settles.</li><li>The guest's verifier is ported rather than rewritten for proving. Precomputing the Flock circuits, which each version fixes, and hints of the kind PR 499 plans for its Groth16 guest would lower its count, but its proof-dependent core alone, the WHIR opening, ring switching, the bus, the sumchecks and their hashing, takes 26.1M to 30.7M cycles.</li><li>The tree's setup, building both circuits from the program and the leaf's shape, takes 0.032 s to 0.036 s once per program and shape and is not in the wrap's time.</li><li>No zero knowledge: this leanVM version does not implement it, for leaves or for recursion proofs.</li><li>One laptop in use during the session: absolute times carry its background load, which each round's ratio largely cancels.</li><li>Research code, not audited.</li></ul>
+<details><summary>How it was measured</summary><ul class="plain"><li><b>What is proved.</b> The leaves are the <a href="program-benchmarks.html">program benchmark</a>'s RISC-V programs (the shielded transfer, secp256k1, the private L1 state proof and Falcon-512), each on its largest valid test case, built for leanVM's current guest SDK with the same statement code, and leanVM's own Fibonacci program at four sizes. Their cycles are within 141 of the program benchmark page's. The wrap is a first-level node of leanVM's aggregation tree over one leaf: a recursion-machine proof that the RISC-V verifier's core accepts the leaf proof, with the claims on the program's bytecode, RAM image and Flock matrices left for the root's verifier, which settles them natively.</li><li><b>The cross-version wrap.</b> The benchmark builds 1096dedf's verifier with std for rv64im, on std's zkvm platform layer (one thread, compare-and-swap lowered to calls the guest provides), against the current SDK. Its advice holds the old program's ELF, the old statement and the old proof as the old prover serializes it, and it commits the old program's digest, input and output. The old proofs are made with 1096dedf at rate 1, whose cycles match the program benchmark page's. The runs are counted with <code>measure_unbounded</code> (local patch), which runs past the cap that <code>measure</code> and proving refuse, as PR 499's <code>Program::count</code> does; every run gives the expected output, so the old verifier accepted each proof.</li><li><b>Pins.</b> leanVM <code>riscv-exploration</code> at <code>7532d46</code> (6 October 2026), log inverse rate 1, the tree's nodes of two children; the wrap-only circuit is <code>Tree::new_first_only</code> from a local patch, which adds a constructor and changes nothing else.</li><li><b>Timing.</b> One session on the laptop's 65 W adapter with the battery full, 3 rounds in rotated orders, every program in a fresh process after an idle rest of 20 times the previous process's proving time (30 s to 5 min). Each process proves the leaf twice and the wrap twice, timing the second of each, with 5 s before every proof. The machine was in use: the wait for other processes to fall below 25% CPU was capped at one minute, and each run's load is recorded beside it. Ratios are medians of the ratios within a round.</li><li><b>Refusals.</b> Every run checks that the wrap's prover refuses a leaf whose output is changed and leaf proofs with one byte flipped at eight places, and that the wrap's verifier refuses other leaf outputs and wrap proofs with one byte flipped at eight places: all were refused. The prover's refusals come from the native verifier it runs first; that the rows themselves reject a forged transcript is leanVM's own test suite (<code>rec/tree/tests.rs</code>).</li></ul></details>
+
+<footer>A follow-up to this repository's <a href="program-benchmarks.html">program benchmark</a>, on what wrapping a proof costs on leanVM. The benchmark's own programs and harness are not published here.</footer>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+<script id="data" type="application/json">{"rows": [{"key": "spend", "title": "Shielded transfer", "program": true, "leaf_cycles": 460330, "leaf_words": 16390304, "leaf_s": 0.212668, "leaf_kib": 337.708984375, "leaf_ms": 2.478958, "tree_s": 0.133822458, "only_s": 0.089899417, "tree_ratio": 0.6330953649059508, "only_ratio": 0.4172942827767035, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.2138671875, "only_kib": 236.0107421875, "tree_ms": 3.61375, "only_ms": 3.132958, "leaf_spread": 0.006065599902195004, "tree_spread": 0.05428709880668907, "only_spread": 0.023345067966347378}, {"key": "k1", "title": "secp256k1 signature", "program": true, "leaf_cycles": 2471277, "leaf_words": 139162960, "leaf_s": 1.654911791, "leaf_kib": 349.232421875, "leaf_ms": 3.785375, "tree_s": 0.149082875, "only_s": 0.096297, "tree_ratio": 0.08131483431079863, "only_ratio": 0.05522631303111776, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.6201171875, "only_kib": 234.4794921875, "tree_ms": 3.790375, "only_ms": 3.276167, "leaf_spread": 0.11801419571854393, "tree_spread": 0.11182929628906067, "only_spread": 0.026694756846007594}, {"key": "mpt", "title": "Private L1 state proof", "program": true, "leaf_cycles": 967437, "leaf_words": 43916272, "leaf_s": 0.524102167, "leaf_kib": 327.943359375, "leaf_ms": 2.6484590000000003, "tree_s": 0.133449917, "only_s": 0.091031958, "tree_ratio": 0.23570265188241274, "only_ratio": 0.17302873798402277, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.6201171875, "only_kib": 235.2919921875, "tree_ms": 3.716417, "only_ms": 3.163959, "leaf_spread": 0.08726987957674284, "tree_spread": 0.0882924940298015, "only_spread": 0.03324428109082307}, {"key": "falcon", "title": "Falcon-512 signature", "program": true, "leaf_cycles": 486615, "leaf_words": 23545840, "leaf_s": 0.301152583, "leaf_kib": 319.404296875, "leaf_ms": 2.5458339999999997, "tree_s": 0.134476375, "only_s": 0.087051292, "tree_ratio": 0.44905902167731254, "only_ratio": 0.2784556854893775, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.5263671875, "only_kib": 236.8232421875, "tree_ms": 3.606, "only_ms": 3.263208, "leaf_spread": 0.005611769898051971, "tree_spread": 0.015445404443717352, "only_spread": 0.04389462708950951}, {"key": "fib10k", "title": "Fibonacci, 10,000 steps", "program": false, "leaf_cycles": 10026, "leaf_words": 473995, "leaf_s": 0.030982292, "leaf_kib": 247.294921875, "leaf_ms": 2.59675, "tree_s": 0.136260959, "only_s": 0.087023334, "tree_ratio": 4.445033730880852, "only_ratio": 2.6527091477716964, "tree_words": 9569280, "only_words": 5071360, "tree_kib": 255.5576171875, "only_kib": 237.2294921875, "tree_ms": 3.4212919999999998, "only_ms": 2.847041, "leaf_spread": 0.4195125073380627, "tree_spread": 0.010688123808082185, "only_spread": 0.031290446766840764}, {"key": "fib100k", "title": "Fibonacci, 100,000 steps", "program": false, "leaf_cycles": 100206, "leaf_words": 3685259, "leaf_s": 0.068879917, "leaf_kib": 290.958984375, "leaf_ms": 2.280541, "tree_s": 0.136526375, "only_s": 0.090058625, "tree_ratio": 1.9585502355365159, "only_ratio": 1.3387318999064248, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.5888671875, "only_kib": 235.6982421875, "tree_ms": 3.406542, "only_ms": 3.000708, "leaf_spread": 0.02972383082285079, "tree_spread": 0.04557483489911748, "only_spread": 0.11275016690516872}, {"key": "fib1m", "title": "Fibonacci, 1,000,000 steps", "program": false, "leaf_cycles": 1002006, "leaf_words": 29375371, "leaf_s": 0.32390625, "leaf_kib": 340.638671875, "leaf_ms": 2.158875, "tree_s": 0.134615709, "only_s": 0.089111833, "tree_ratio": 0.41525659971056433, "only_ratio": 0.2739870480429712, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.7763671875, "only_kib": 236.2607421875, "tree_ms": 3.555667, "only_ms": 3.126791, "leaf_spread": 0.003936197588036723, "tree_spread": 0.00785290964815995, "only_spread": 0.09402931931610027}, {"key": "fib8m", "title": "Fibonacci, 8,000,000 steps", "program": false, "leaf_cycles": 8016007, "leaf_words": 234896267, "leaf_s": 2.325529666, "leaf_kib": 390.880859375, "leaf_ms": 2.3882090000000002, "tree_s": 0.135688208, "only_s": 0.090052083, "tree_ratio": 0.05801259961257405, "only_ratio": 0.0383620730828317, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.0263671875, "only_kib": 236.8857421875, "tree_ms": 3.602042, "only_ms": 3.211541, "leaf_spread": 0.027660813336620668, "tree_spread": 0.012012525067764082, "only_spread": 0.02012168891196007}], "sweep": [{"cycles": 1008, "leaf": 43915, "tree": 9569280, "only": 2851328}, {"cycles": 10026, "leaf": 473995, "tree": 9569280, "only": 5071360}, {"cycles": 100206, "leaf": 3685259, "tree": 9569280, "only": 5079552}, {"cycles": 1002006, "leaf": 29375371, "tree": 9569280, "only": 5079552}, {"cycles": 8016007, "leaf": 234896267, "tree": 9569280, "only": 5079552}], "cap": [{"title": "Shielded transfer", "tree": 9569280, "only": 5079552, "guest": 2972322944, "guest_cycles": 75301564}, {"title": "secp256k1 signature", "tree": 9569280, "only": 5079552, "guest": 5954997376, "guest_cycles": 139080505}, {"title": "Private L1 state proof", "tree": 9569280, "only": 5079552, "guest": 2972322944, "guest_cycles": 77102912}, {"title": "Falcon-512 signature", "tree": 9569280, "only": 5079552, "guest": 2972322944, "guest_cycles": 77135207}, {"title": "Groth16 proof (PR 499)", "guest": 493957744, "guest_cycles": 11591801}], "brk": [{"title": "Shielded transfer", "total": 75301564, "parts": [{"key": "prog", "name": "The old program: reading it and evaluating its columns", "cycles": 24962888}, {"key": "flock", "name": "Flock circuits, fixed by the version", "cycles": 16163233}, {"key": "proof", "name": "Checking the proof: WHIR, ring switching, sumchecks, hashing", "cycles": 26059953}, {"key": "rest", "name": "Memory copies and the rest", "cycles": 8115490}]}, {"title": "secp256k1 signature", "total": 139080505, "parts": [{"key": "prog", "name": "The old program: reading it and evaluating its columns", "cycles": 83382553}, {"key": "flock", "name": "Flock circuits, fixed by the version", "cycles": 16170203}, {"key": "proof", "name": "Checking the proof: WHIR, ring switching, sumchecks, hashing", "cycles": 30674862}, {"key": "rest", "name": "Memory copies and the rest", "cycles": 8852887}]}, {"title": "Groth16 verifier (PR 499)", "total": 11591801, "parts": [{"key": "g16", "name": "A Groth16 verifier, not broken down", "cycles": 11591801}]}], "parts": [["prog", "The old program: reading it and evaluating its columns"], ["flock", "Flock circuits, fixed by the version"], ["proof", "Checking the proof: WHIR, ring switching, sumchecks, hashing"], ["rest", "Memory copies and the rest"]]}</script>
+<script>
+(() => {
+const D = JSON.parse(document.getElementById('data').textContent);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a, p) => { const n = document.createElementNS(NS, t); for (const k in a) n.setAttribute(k, a[k]); if (p) p.appendChild(n); return n; };
+const text = (svg, a, s) => { const t = el('text', a, svg); t.textContent = s; return t; };
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const secs = s => (s < 1 ? s.toFixed(3) : s.toFixed(2)) + ' s';
+const tip = document.getElementById('tip');
+const move = e => { const w = tip.offsetWidth; tip.style.left = Math.min(e.clientX + 14, innerWidth - w - 8) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; };
+const show = (e, lines) => {
+  tip.replaceChildren(...lines.map(([v, k]) => { const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = v; d.append(b, ' ' + k); return d; }));
+  tip.style.opacity = 1; move(e);
+};
+const hide = () => tip.style.opacity = 0;
+const hover = (node, lines) => {
+  node.addEventListener('mouseenter', e => show(e, lines)); node.addEventListener('mousemove', move);
+  node.addEventListener('mouseleave', hide); node.setAttribute('tabindex', 0);
+  node.addEventListener('focus', () => { const r = node.getBoundingClientRect(); show({clientX: r.left + 20, clientY: r.top}, lines); });
+  node.addEventListener('blur', hide);
+};
+// One encoding per series in both figures: color and shape.
+const SERIES = {
+  leaf: {name: 'Leaf proof (the user\'s first proof)', color: 'var(--s-riscv)', shape: 'diamond'},
+  tree: {name: 'Recursion machine, upstream tree', color: 'var(--s-byte)', shape: 'circle'},
+  only: {name: 'Recursion machine, wrap-only circuit', color: 'var(--s-sol)', shape: 'square'},
+  guest: {name: 'Old verifier as a program', color: 'var(--heat)', shape: 'circle'},
+};
+function mark(svg, s, cx, cy, hollow) {
+  const a = {fill: hollow ? 'var(--surface)' : s.color, stroke: s.color, 'stroke-width': 2};
+  const ring = {fill: 'none', stroke: 'var(--surface)', 'stroke-width': 2};
+  if (s.shape === 'circle') { el('circle', {cx, cy, r: 7.5, ...ring}, svg); el('circle', {cx, cy, r: 5.5, ...a}, svg); }
+  else if (s.shape === 'diamond') el('rect', {x: cx - 5, y: cy - 5, width: 10, height: 10, transform: `rotate(45 ${cx} ${cy})`, ...a}, svg);
+  else el('rect', {x: cx - 5, y: cy - 5, width: 10, height: 10, rx: 1.5, ...a}, svg);
+}
+const icon = s => { const v = el('svg', {width: 14, height: 14, viewBox: '0 0 14 14', 'aria-hidden': 'true'}); mark(v, s, 7, 7); return v.outerHTML; };
+document.getElementById('key0').innerHTML = [SERIES.tree, SERIES.only, SERIES.guest]
+  .map(s => `<span>${icon(s)}${s.name}</span>`).join('');
+for (const id of ['key1', 'key2']) document.getElementById(id).innerHTML =
+  [SERIES.leaf, SERIES.tree, SERIES.only].map(s => `<span>${icon(s)}${s.name}</span>`).join('') +
+  (id === 'key2' ? `<span>${icon({...SERIES.leaf, shape: 'diamond'}).replace('fill="var(--s-riscv)"', 'fill="var(--surface)"')}A program's leaf</span>` : '');
+
+// The widest of the names at the figures' label size and weight, so no name runs off the left edge.
+const labelWidth = (names, size, weight = 600) => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `${weight} ${size}px ${getComputedStyle(document.body).fontFamily}`;
+  return Math.max(...names.map(n => ctx.measureText(n).width));
+};
+
+function capFigure() {
+  const host = document.getElementById('fig-cap');
+  const W = host.clientWidth, narrow = W < 560;
+  const rows = D.cap, lineH = 30, T = 18, B = 26;
+  const L = Math.ceil(labelWidth(rows.map(r => r.title), 12)) + 16, R = 12;
+  const H = T + rows.length * lineH + B;
+  host.innerHTML = '';
+  const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Committed words of each way to wrap, against one proof'}, host);
+  const lo = 21, hi = 35;
+  const px = w => L + (Math.log2(w) - lo) / (hi - lo) * (W - L - R);
+  for (let e = lo + 1; e <= hi; e += narrow ? 4 : 2) {
+    el('line', {x1: px(2 ** e), x2: px(2 ** e), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
+    text(svg, {x: px(2 ** e), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, '2^' + e);
+  }
+  el('line', {x1: px(2 ** 28), x2: px(2 ** 28), y1: T - 6, y2: H - B, stroke: 'var(--ink-2)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3'}, svg);
+  text(svg, {x: px(2 ** 28) + 6, y: T - 6, 'font-size': 11.5, fill: 'var(--ink-2)'}, 'one proof');
+  rows.forEach((r, i) => {
+    const cy = T + i * lineH + lineH / 2;
+    text(svg, {x: L - 12, y: cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink)', 'font-weight': 600}, r.title);
+    const xs = ['tree', 'only', 'guest'].filter(k => r[k]).map(k => px(r[k]));
+    if (xs.length > 1) el('line', {x1: Math.min(...xs), x2: Math.max(...xs), y1: cy, y2: cy, stroke: 'var(--grid)', 'stroke-width': 2}, svg);
+    const lines = [[r.title, '']];
+    for (const k of ['only', 'tree', 'guest']) if (r[k]) {
+      mark(svg, SERIES[k], px(r[k]), cy);
+      lines.push([fmt(r[k]) + ' words', SERIES[k].name + (k === 'guest' ? `, ${fmt(r.guest_cycles)} cycles` : '')]);
+    }
+    // The figure's point: how many proofs the program would need.
+    const over = r.guest / 2 ** 28;
+    text(svg, {x: px(r.guest) + 11, y: cy + 4, 'font-size': 11.5, 'font-weight': 600, fill: 'var(--ink-2)'},
+      `${over >= 2 ? over.toFixed(0) : over.toFixed(1)}× one proof`);
+    hover(el('rect', {x: L, y: cy - lineH / 2, width: W - L, height: lineH, fill: 'transparent'}, svg), lines);
+  });
+}
+
+// Ink for a label set inside a fill: white on dark fills, near-black on light ones.
+function inkOn(color) {
+  const probe = document.createElement('span'); probe.style.color = color; document.body.appendChild(probe);
+  const [r, g, b] = getComputedStyle(probe).color.match(/\d+/g).map(Number); probe.remove();
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140 ? '#121212' : '#ffffff';
+}
+const PART_COLOR = {prog: 'var(--p-prog)', flock: 'var(--p-flock)', proof: 'var(--p-proof)', rest: 'var(--p-rest)'};
+document.getElementById('keyb').innerHTML = D.parts.map(([k, n]) => `<span><i class="sw" style="background:${PART_COLOR[k]}"></i>${n}</span>`).join('');
+
+function breakFigure() {
+  const host = document.getElementById('fig-break');
+  const W = host.clientWidth, narrow = W < 560;
+  const rows = D.brk, barH = 22, T = 4, B = 26;
+  // On a narrow screen each row's name sits above its bar, so the bars keep the width.
+  const lineH = narrow ? 50 : 40, R = 56;
+  const L = narrow ? 8 : Math.ceil(labelWidth(rows.map(r => r.title), 12)) + 16;
+  const H = T + rows.length * lineH + B;
+  host.innerHTML = '';
+  const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Where the cycles of the old verifier go'}, host);
+  const max = 150e6;
+  const px = c => L + c / max * (W - L - R);
+  for (let c = 0; c <= max; c += narrow ? 50e6 : 25e6) {
+    el('line', {x1: px(c), x2: px(c), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
+    text(svg, {x: px(c), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, c ? (c / 1e6) + 'M' : '0');
+  }
+  rows.forEach((r, i) => {
+    const cy = T + i * lineH + lineH / 2 + (narrow ? 8 : 0), y = cy - barH / 2;
+    if (narrow) text(svg, {x: L, y: y - 6, 'font-size': 12, fill: 'var(--ink)', 'font-weight': 600}, r.title);
+    else text(svg, {x: L - 12, y: cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink)', 'font-weight': 600}, r.title);
+    let x = px(0);
+    r.parts.forEach((p, j) => {
+      const w = px(p.cycles) - px(0), last = j === r.parts.length - 1;
+      // A 2px surface gap between segments; the data end alone is rounded.
+      // The Groth16 verifier is a reference, drawn as an outline.
+      const ref = p.key === 'g16';
+      const seg = el('path', {d: last
+        ? `M${x} ${y} H${x + w - 4} Q${x + w} ${y} ${x + w} ${y + 4} V${y + barH - 4} Q${x + w} ${y + barH} ${x + w - 4} ${y + barH} H${x} Z`
+        : `M${x} ${y} H${x + w - 2} V${y + barH} H${x} Z`,
+        ...(ref ? {fill: 'none', stroke: 'var(--ink-3)', 'stroke-width': 1.5} : {fill: PART_COLOR[p.key]})}, svg);
+      if (!ref) {
+        const label = (p.cycles / 1e6).toFixed(1) + 'M';
+        const t = text(svg, {x: x + (w - (last ? 0 : 2)) / 2, y: cy + 4, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 600, fill: inkOn(PART_COLOR[p.key])}, label);
+        if (t.getComputedTextLength() + 10 > w - 2) t.remove();
+      }
+      hover(seg, [[fmt(p.cycles) + ' cycles', p.name], [(100 * p.cycles / r.total).toFixed(0) + '%', 'of ' + r.title.toLowerCase().replace('groth16', 'Groth16')]]);
+      x += w;
+    });
+    text(svg, {x: px(r.total) + 8, y: cy + 4, 'font-size': 11.5, 'font-weight': 600, fill: 'var(--ink-2)'}, (r.total / 1e6).toFixed(1) + 'M');
+  });
+}
+
+function timeFigure() {
+  const host = document.getElementById('fig-time');
+  const W = host.clientWidth, narrow = W < 560;
+  const rows = D.rows, lineH = 30, T = 4, B = 26, gapAt = 4, gap = 14;
+  const L = Math.ceil(labelWidth(rows.map(r => r.title), 12)) + 16, R = narrow ? 12 : 120;
+  const H = T + rows.length * lineH + gap + B;
+  host.innerHTML = '';
+  const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Proof time of each leaf and of its wrap'}, host);
+  const lo = Math.log10(0.01), hi = Math.log10(10);
+  const px = v => L + (Math.log10(v) - lo) / (hi - lo) * (W - L - R);
+  for (const t of (narrow ? [0.01, 0.1, 1, 10] : [0.01, 0.03, 0.1, 0.3, 1, 3, 10])) {
+    el('line', {x1: px(t), x2: px(t), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
+    text(svg, {x: px(t), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, t + ' s');
+  }
+  rows.forEach((r, i) => {
+    const cy = T + i * lineH + lineH / 2 + (i >= gapAt ? gap : 0);
+    text(svg, {x: L - 12, y: cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: r.program ? 'var(--ink)' : 'var(--ink-2)', 'font-weight': r.program ? 600 : 400}, r.title);
+    const xs = [r.leaf_s, r.tree_s, r.only_s].map(px);
+    el('line', {x1: Math.min(...xs), x2: Math.max(...xs), y1: cy, y2: cy, stroke: 'var(--grid)', 'stroke-width': 2}, svg);
+    mark(svg, SERIES.only, px(r.only_s), cy);
+    mark(svg, SERIES.tree, px(r.tree_s), cy);
+    mark(svg, SERIES.leaf, px(r.leaf_s), cy);
+    if (!narrow) text(svg, {x: W - R + 12, y: cy + 4, 'font-size': 11.5, fill: 'var(--ink-3)'}, `wrap ${(100 * r.tree_ratio).toFixed(0)}% of leaf`);
+    hover(el('rect', {x: L, y: cy - lineH / 2, width: W - L, height: lineH, fill: 'transparent'}, svg), [
+      [r.title, ''], [secs(r.leaf_s), `leaf proof, ${fmt(r.leaf_cycles)} cycles`],
+      [secs(r.tree_s), `wrap, upstream tree (${(100 * r.tree_ratio).toFixed(0)}% of the leaf)`],
+      [secs(r.only_s), `wrap, wrap-only circuit (${(100 * r.only_ratio).toFixed(0)}% of the leaf)`]]);
+  });
+}
+
+function sizeFigure() {
+  const host = document.getElementById('fig-size');
+  const W = host.clientWidth, narrow = W < 560;
+  const L = 58, R = narrow ? 12 : 130, T = 10, B = 34, H = 300;
+  host.innerHTML = '';
+  const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Committed words of each leaf and of its wrap'}, host);
+  const xlo = 3, xhi = 7, ylo = 15, yhi = 28.5;
+  const px = c => L + (Math.log10(c) - xlo) / (xhi - xlo) * (W - L - R);
+  const py = w => T + (yhi - Math.log2(w)) / (yhi - ylo) * (H - T - B);
+  for (let e = xlo; e <= xhi; e++) {
+    el('line', {x1: px(10 ** e), x2: px(10 ** e), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
+    text(svg, {x: px(10 ** e), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, (10 ** e).toLocaleString('en-US'));
+  }
+  text(svg, {x: L + (W - L - R) / 2, y: H - 4, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, 'leaf cycles');
+  for (let e = 16; e <= 28; e += 2) {
+    el('line', {x1: L, x2: W - R, y1: py(2 ** e), y2: py(2 ** e), stroke: 'var(--grid)', 'stroke-width': 1}, svg);
+    text(svg, {x: L - 8, y: py(2 ** e) + 4, 'text-anchor': 'end', 'font-size': 11.5, fill: 'var(--ink-3)'}, '2^' + e);
+  }
+  const sw = D.sweep;
+  for (const k of ['leaf', 'tree', 'only']) {
+    const s = SERIES[k];
+    const pts = sw.map(r => [px(r.cycles), py(r[k])]);
+    el('polyline', {points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}, svg);
+    sw.forEach((r, i) => {
+      mark(svg, s, pts[i][0], pts[i][1]);
+      hover(el('circle', {cx: pts[i][0], cy: pts[i][1], r: 12, fill: 'transparent'}, svg),
+        [[fmt(r[k]) + ' words', `${s.name}, Fibonacci leaf of ${fmt(r.cycles)} cycles`]]);
+    });
+    if (!narrow) { const [x, y] = pts[pts.length - 1]; text(svg, {x: x + 12, y: y + 4, 'font-size': 11.5, fill: 'var(--ink-2)'}, k === 'leaf' ? 'leaf' : k === 'tree' ? 'wrap, tree' : 'wrap only'); }
+  }
+  for (const r of D.rows.filter(r => r.program)) {
+    const [x, y] = [px(r.leaf_cycles), py(r.leaf_words)];
+    mark(svg, SERIES.leaf, x, y, true);
+    hover(el('circle', {cx: x, cy: y, r: 12, fill: 'transparent'}, svg), [[fmt(r.leaf_words) + ' words', `${r.title}, ${fmt(r.leaf_cycles)} cycles; its wrap ${fmt(r.tree_words)} (tree), ${fmt(r.only_words)} (wrap only)`]]);
+  }
+}
+
+let t = '<thead><tr><th>Leaf</th><th>Cycles</th><th>Leaf words</th><th>Leaf proof</th><th>Leaf size</th><th>Leaf verify</th>' +
+  '<th>Wrap, tree</th><th>Wrap only</th><th>Wrap / leaf, tree</th><th>Wrap / leaf, only</th><th>Wrap words, tree / only</th><th>Wrap size, tree / only</th><th>Wrap verify, tree / only</th></tr></thead><tbody>';
+for (const r of D.rows) t += `<tr><td>${r.title}</td><td>${fmt(r.leaf_cycles)}</td><td>${fmt(r.leaf_words)}</td><td>${secs(r.leaf_s)}</td>` +
+  `<td>${r.leaf_kib.toFixed(0)} KiB</td><td>${r.leaf_ms.toFixed(1)} ms</td><td>${secs(r.tree_s)}</td><td>${secs(r.only_s)}</td>` +
+  `<td>${(100 * r.tree_ratio).toFixed(0)}%</td><td>${(100 * r.only_ratio).toFixed(0)}%</td><td>${fmt(r.tree_words)} / ${fmt(r.only_words)}</td>` +
+  `<td>${r.tree_kib.toFixed(0)} / ${r.only_kib.toFixed(0)} KiB</td><td>${r.tree_ms.toFixed(1)} / ${r.only_ms.toFixed(1)} ms</td></tr>`;
+document.getElementById('tbl').innerHTML = t + '</tbody>';
+
+// A figure is drawn only once its container has a width.
+const redraw = () => { if (document.getElementById('fig-cap').clientWidth > 200) { capFigure(); breakFigure(); timeFigure(); sizeFigure(); } };
+redraw();
+new ResizeObserver(redraw).observe(document.querySelector('main'));
+
+const btn = document.getElementById('theme');
+const apply = th => { if (th) document.documentElement.setAttribute('data-theme', th); };
+try { apply(localStorage.getItem('theme')); } catch (e) {}
+btn.addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const dark = cur === 'dark' || (!cur && matchMedia('(prefers-color-scheme: dark)').matches);
+  const th = dark ? 'light' : 'dark'; apply(th);
+  try { localStorage.setItem('theme', th); } catch (e) {}
+  redraw();  // labels inside fills take their ink from the theme's colors
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
+})();
+</script>
+</body>
+</html>
