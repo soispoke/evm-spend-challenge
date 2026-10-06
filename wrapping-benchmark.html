@@ -134,6 +134,7 @@ footer { font-size: 12px; color: var(--ink-3); margin-top: 24px; }
 .series { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--ink-2); margin: 0 0 8px; }
 .series span { display: inline-flex; align-items: center; gap: 6px; }
 .tk-t b { color: var(--ink); font-weight: 650; }
+.headline { font-size: 18px; line-height: 1.45; color: var(--ink); font-weight: 560; margin: 4px 0 10px; max-width: 80ch; }
 .series i.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
 /* The parts of the old verifier: categorical slots the routes do not use (validated), the rest in gray. */
 :root { --p-prog: #e87ba4; --p-flock: #eda100; --p-proof: #2a78d6; --p-rest: #b3b3b3; }
@@ -148,21 +149,22 @@ footer { font-size: 12px; color: var(--ink-3); margin-top: 24px; }
   <div>
     <p class="eyebrow">Benchmark · 6 October 2026 · one M5 Max laptop</p>
     <h1>What wrapping a proof costs</h1>
-    <p class="sub">Wrapping, from <i>Exposing an ISA for post-quantum privacy</i> (h/t Vitalik): when the prover changes, users keep proving with the old prover, then make a second proof in the new system showing that the old verifier accepts the first. How much does that second proof cost? We measured it two ways on leanVM: running an earlier version's verifier as an ordinary program of the current version, and checking a proof in leanVM's recursion machine, a circuit built to check its own proofs.</p>
+    <p class="headline">Running an old leanVM verifier as a program inside a newer leanVM takes 75.3M to 139.1M cycles, 11 to 22 times what one proof holds, so the clean form of wrapping cannot be proved today. leanVM's recursion machine wraps a proof in 0.13 to 0.15 s, but only by keeping a circuit for each old verifier in every later fork.</p>
+    <p class="sub">Wrapping (h/t Vitalik), from <i>Exposing an ISA for post-quantum privacy</i>: when the prover changes, users keep proving with the old prover, then make a second proof in the new system showing that the old verifier accepts the first. We measured that second proof both ways on leanVM, over the program benchmark's privacy statements.</p>
   </div>
   <button class="theme" id="theme" type="button" aria-label="Toggle color theme">Theme</button>
 </header>
 
 <h2 class="part first">Takeaways</h2>
-<div class="takeaways"><div class="tk"><div class="tk-v">11–22×</div><div class="tk-t"><b>As a program, the old verifier does not fit in one proof.</b> leanVM 1096dedf's verifier, run in leanVM 7532d46, takes 75.3M to 139.1M cycles to check one proof of the four statements. Its witness, 2^31.47 to 2^32.47 words, is 11 to 22 times what one proof holds, and leanVM cannot split a run across proofs, so this wrap cannot be proved today.</div></div><div class="tk"><div class="tk-v">6.5–12×</div><div class="tk-t"><b>It costs more than checking a Groth16 proof.</b> A Groth16 verifier written for the same machine (leanVM PR 499) takes 11.6M cycles and also misses one proof (2^28.88 words); the old leanVM verifier takes 6.5 to 12.0 times that. Even its part that only checks the proof, the WHIR opening, ring switching, sumchecks and hashing, takes 26.1M to 30.7M.</div></div><div class="tk"><div class="tk-v">25.0M–83.4M</div><div class="tk-t"><b>Most of the cost comes from the old program, not from how long it ran.</b> Reading the old program and proof and evaluating the program's columns takes 25.0M to 83.4M cycles, and the Flock circuits, fixed by the version, 16.2M. Committing each program once in a key (leanVM PR 418) would replace most of the program's part with one opening, for proofs made after it.</div></div><div class="tk"><div class="tk-v">0.13–0.15 s</div><div class="tk-t"><b>In the recursion machine, wrapping is cheap.</b> It takes 0.133 s to 0.149 s for any leaf (0.087 s to 0.096 s with a circuit sized for wrapping only) and adds 8% to 63% to the user's proving time. But it checks proofs of its own version only, and leaves the program and Flock checks to the final verifier.</div></div></div>
-<p class="conclusion">So wrapping does not let later forks forget the old system; it changes what they keep. Wrapping cheaply means every later recursion machine keeps a circuit for each old verifier, and users wrap their own old proofs so that mempool nodes need no old verifier. The recursion machine itself can still change at a fork: wrap proofs are made fresh for each transaction, so wallets just wrap with the new one.</p>
+<div class="takeaways"><div class="tk"><div class="tk-v">11–22×</div><div class="tk-t"><b>As a program, the old verifier does not fit in one proof.</b> leanVM 1096dedf's verifier, run in leanVM 7532d46, takes 75.3M to 139.1M cycles to check one proof of the four statements, a witness 11 to 22 times what one proof holds (2^31.47 to 2^32.47 words against 2^28). leanVM cannot split a run across proofs, so this wrap cannot be proved today. It is the route that lets later forks keep nothing from the old version.</div></div><div class="tk"><div class="tk-v">0.13–0.15 s</div><div class="tk-t"><b>In the recursion machine, wrapping fits easily, but later forks keep the old verifier.</b> A wrap takes 0.133 s to 0.149 s for any leaf (0.087 s to 0.096 s with a circuit sized for wrapping only), a witness of about 1/28 of one proof, and adds 8% to 63% to the user's proving time. But the machine checks proofs of its own version only, so each later fork would need a circuit for each old verifier, and it leaves the program and Flock checks to the final verifier.</div></div><div class="tk"><div class="tk-v">6.5–12×</div><div class="tk-t"><b>Why so large: it costs more than checking a Groth16 proof.</b> A Groth16 verifier written for the same machine (leanVM PR 499) takes 11.6M cycles and also misses one proof (1.8 times); the old leanVM verifier takes 6.5 to 12.0 times that. Even its part that only checks the proof, the WHIR opening, ring switching, sumchecks and hashing, takes 26.1M to 30.7M.</div></div><div class="tk"><div class="tk-v">25.0M–83.4M</div><div class="tk-t"><b>Most of it comes from the old program, not from how long it ran.</b> Reading the old program and proof and evaluating the program's columns takes 25.0M to 83.4M cycles, and the Flock circuits, fixed by the version, 16.2M. Committing each program once in a key (leanVM PR 418) would replace most of the program's part with one opening, for proofs made after it.</div></div></div>
+<p class="conclusion">So wrapping does not let later forks forget the old system; it changes what they keep: old verifiers, as circuits in every later recursion machine, instead of old interpreters. Users would wrap their own old proofs, so that mempool nodes need no old verifier. The recursion machine itself can still change at a fork: wrap proofs are made fresh for each transaction, so wallets just wrap with the new one.</p>
 
 <figure class="card wide-card">
-  <p class="fig-title">The second proof against what one proof holds</p>
-  <p class="fig-sub">Committed words, log scale · the dashed line is one leanVM proof (2^28)</p>
+  <p class="fig-title">How many proofs the second proof needs, and what later forks keep</p>
+  <p class="fig-sub">Witness of the second proof in leanVM proofs, log scale · the dashed line is one proof</p>
   <div class="series" id="key0"></div>
   <div id="fig-cap"></div>
-  <figcaption>Exact committed words: the recursion machine's from its circuits, the programs' from counting their runs to the end (leanVM refuses them before proving), the Groth16 verifier's from leanVM PR 499. The old verifier checks 1096dedf proofs; the recursion machine checks proofs of its own version and leaves the program and Flock checks to the final verifier.</figcaption>
+  <figcaption>Committed words of the second proof divided by 2^28, what one leanVM proof holds, from exact counts: the programs' runs counted to the end (leanVM refuses them before proving), the Groth16 verifier's from leanVM PR 499, the recursion machine's from its circuits, which have the same size for every leaf from 10,000 to 8,000,000 cycles. The old verifier checks 1096dedf proofs; the recursion machine checks proofs of its own version and leaves the program and Flock checks to the final verifier. Either way the user also keeps the old prover.</figcaption>
 </figure>
 
 <h2 class="part">The old verifier as a program</h2>
@@ -211,7 +213,7 @@ footer { font-size: 12px; color: var(--ink-3); margin-top: 24px; }
 <footer>A follow-up to this repository's <a href="program-benchmarks.html">program benchmark</a>, on what wrapping a proof costs on leanVM. The benchmark's own programs and harness are not published here.</footer>
 </main>
 <div class="tip" id="tip" role="tooltip"></div>
-<script id="data" type="application/json">{"rows": [{"key": "spend", "title": "Shielded transfer", "program": true, "leaf_cycles": 460330, "leaf_words": 16390304, "leaf_s": 0.212668, "leaf_kib": 337.708984375, "leaf_ms": 2.478958, "tree_s": 0.133822458, "only_s": 0.089899417, "tree_ratio": 0.6330953649059508, "only_ratio": 0.4172942827767035, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.2138671875, "only_kib": 236.0107421875, "tree_ms": 3.61375, "only_ms": 3.132958, "leaf_spread": 0.006065599902195004, "tree_spread": 0.05428709880668907, "only_spread": 0.023345067966347378}, {"key": "k1", "title": "secp256k1 signature", "program": true, "leaf_cycles": 2471277, "leaf_words": 139162960, "leaf_s": 1.654911791, "leaf_kib": 349.232421875, "leaf_ms": 3.785375, "tree_s": 0.149082875, "only_s": 0.096297, "tree_ratio": 0.08131483431079863, "only_ratio": 0.05522631303111776, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.6201171875, "only_kib": 234.4794921875, "tree_ms": 3.790375, "only_ms": 3.276167, "leaf_spread": 0.11801419571854393, "tree_spread": 0.11182929628906067, "only_spread": 0.026694756846007594}, {"key": "mpt", "title": "Private L1 state proof", "program": true, "leaf_cycles": 967437, "leaf_words": 43916272, "leaf_s": 0.524102167, "leaf_kib": 327.943359375, "leaf_ms": 2.6484590000000003, "tree_s": 0.133449917, "only_s": 0.091031958, "tree_ratio": 0.23570265188241274, "only_ratio": 0.17302873798402277, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.6201171875, "only_kib": 235.2919921875, "tree_ms": 3.716417, "only_ms": 3.163959, "leaf_spread": 0.08726987957674284, "tree_spread": 0.0882924940298015, "only_spread": 0.03324428109082307}, {"key": "falcon", "title": "Falcon-512 signature", "program": true, "leaf_cycles": 486615, "leaf_words": 23545840, "leaf_s": 0.301152583, "leaf_kib": 319.404296875, "leaf_ms": 2.5458339999999997, "tree_s": 0.134476375, "only_s": 0.087051292, "tree_ratio": 0.44905902167731254, "only_ratio": 0.2784556854893775, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.5263671875, "only_kib": 236.8232421875, "tree_ms": 3.606, "only_ms": 3.263208, "leaf_spread": 0.005611769898051971, "tree_spread": 0.015445404443717352, "only_spread": 0.04389462708950951}, {"key": "fib10k", "title": "Fibonacci, 10,000 steps", "program": false, "leaf_cycles": 10026, "leaf_words": 473995, "leaf_s": 0.030982292, "leaf_kib": 247.294921875, "leaf_ms": 2.59675, "tree_s": 0.136260959, "only_s": 0.087023334, "tree_ratio": 4.445033730880852, "only_ratio": 2.6527091477716964, "tree_words": 9569280, "only_words": 5071360, "tree_kib": 255.5576171875, "only_kib": 237.2294921875, "tree_ms": 3.4212919999999998, "only_ms": 2.847041, "leaf_spread": 0.4195125073380627, "tree_spread": 0.010688123808082185, "only_spread": 0.031290446766840764}, {"key": "fib100k", "title": "Fibonacci, 100,000 steps", "program": false, "leaf_cycles": 100206, "leaf_words": 3685259, "leaf_s": 0.068879917, "leaf_kib": 290.958984375, "leaf_ms": 2.280541, "tree_s": 0.136526375, "only_s": 0.090058625, "tree_ratio": 1.9585502355365159, "only_ratio": 1.3387318999064248, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.5888671875, "only_kib": 235.6982421875, "tree_ms": 3.406542, "only_ms": 3.000708, "leaf_spread": 0.02972383082285079, "tree_spread": 0.04557483489911748, "only_spread": 0.11275016690516872}, {"key": "fib1m", "title": "Fibonacci, 1,000,000 steps", "program": false, "leaf_cycles": 1002006, "leaf_words": 29375371, "leaf_s": 0.32390625, "leaf_kib": 340.638671875, "leaf_ms": 2.158875, "tree_s": 0.134615709, "only_s": 0.089111833, "tree_ratio": 0.41525659971056433, "only_ratio": 0.2739870480429712, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.7763671875, "only_kib": 236.2607421875, "tree_ms": 3.555667, "only_ms": 3.126791, "leaf_spread": 0.003936197588036723, "tree_spread": 0.00785290964815995, "only_spread": 0.09402931931610027}, {"key": "fib8m", "title": "Fibonacci, 8,000,000 steps", "program": false, "leaf_cycles": 8016007, "leaf_words": 234896267, "leaf_s": 2.325529666, "leaf_kib": 390.880859375, "leaf_ms": 2.3882090000000002, "tree_s": 0.135688208, "only_s": 0.090052083, "tree_ratio": 0.05801259961257405, "only_ratio": 0.0383620730828317, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.0263671875, "only_kib": 236.8857421875, "tree_ms": 3.602042, "only_ms": 3.211541, "leaf_spread": 0.027660813336620668, "tree_spread": 0.012012525067764082, "only_spread": 0.02012168891196007}], "sweep": [{"cycles": 1008, "leaf": 43915, "tree": 9569280, "only": 2851328}, {"cycles": 10026, "leaf": 473995, "tree": 9569280, "only": 5071360}, {"cycles": 100206, "leaf": 3685259, "tree": 9569280, "only": 5079552}, {"cycles": 1002006, "leaf": 29375371, "tree": 9569280, "only": 5079552}, {"cycles": 8016007, "leaf": 234896267, "tree": 9569280, "only": 5079552}], "cap": [{"title": "Shielded transfer", "tree": 9569280, "only": 5079552, "guest": 2972322944, "guest_cycles": 75301564}, {"title": "secp256k1 signature", "tree": 9569280, "only": 5079552, "guest": 5954997376, "guest_cycles": 139080505}, {"title": "Private L1 state proof", "tree": 9569280, "only": 5079552, "guest": 2972322944, "guest_cycles": 77102912}, {"title": "Falcon-512 signature", "tree": 9569280, "only": 5079552, "guest": 2972322944, "guest_cycles": 77135207}, {"title": "Groth16 proof (PR 499)", "guest": 493957744, "guest_cycles": 11591801}], "brk": [{"title": "Shielded transfer", "total": 75301564, "parts": [{"key": "prog", "name": "The old program: reading it and evaluating its columns", "cycles": 24962888}, {"key": "flock", "name": "Flock circuits, fixed by the version", "cycles": 16163233}, {"key": "proof", "name": "Checking the proof: WHIR, ring switching, sumchecks, hashing", "cycles": 26059953}, {"key": "rest", "name": "Memory copies and the rest", "cycles": 8115490}]}, {"title": "secp256k1 signature", "total": 139080505, "parts": [{"key": "prog", "name": "The old program: reading it and evaluating its columns", "cycles": 83382553}, {"key": "flock", "name": "Flock circuits, fixed by the version", "cycles": 16170203}, {"key": "proof", "name": "Checking the proof: WHIR, ring switching, sumchecks, hashing", "cycles": 30674862}, {"key": "rest", "name": "Memory copies and the rest", "cycles": 8852887}]}, {"title": "Groth16 verifier (PR 499)", "total": 11591801, "parts": [{"key": "g16", "name": "A Groth16 verifier, not broken down", "cycles": 11591801}]}], "parts": [["prog", "The old program: reading it and evaluating its columns"], ["flock", "Flock circuits, fixed by the version"], ["proof", "Checking the proof: WHIR, ring switching, sumchecks, hashing"], ["rest", "Memory copies and the rest"]]}</script>
+<script id="data" type="application/json">{"rows": [{"key": "spend", "title": "Shielded transfer", "program": true, "leaf_cycles": 460330, "leaf_words": 16390304, "leaf_s": 0.212668, "leaf_kib": 337.708984375, "leaf_ms": 2.478958, "tree_s": 0.133822458, "only_s": 0.089899417, "tree_ratio": 0.6330953649059508, "only_ratio": 0.4172942827767035, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.2138671875, "only_kib": 236.0107421875, "tree_ms": 3.61375, "only_ms": 3.132958, "leaf_spread": 0.006065599902195004, "tree_spread": 0.05428709880668907, "only_spread": 0.023345067966347378}, {"key": "k1", "title": "secp256k1 signature", "program": true, "leaf_cycles": 2471277, "leaf_words": 139162960, "leaf_s": 1.654911791, "leaf_kib": 349.232421875, "leaf_ms": 3.785375, "tree_s": 0.149082875, "only_s": 0.096297, "tree_ratio": 0.08131483431079863, "only_ratio": 0.05522631303111776, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.6201171875, "only_kib": 234.4794921875, "tree_ms": 3.790375, "only_ms": 3.276167, "leaf_spread": 0.11801419571854393, "tree_spread": 0.11182929628906067, "only_spread": 0.026694756846007594}, {"key": "mpt", "title": "Private L1 state proof", "program": true, "leaf_cycles": 967437, "leaf_words": 43916272, "leaf_s": 0.524102167, "leaf_kib": 327.943359375, "leaf_ms": 2.6484590000000003, "tree_s": 0.133449917, "only_s": 0.091031958, "tree_ratio": 0.23570265188241274, "only_ratio": 0.17302873798402277, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.6201171875, "only_kib": 235.2919921875, "tree_ms": 3.716417, "only_ms": 3.163959, "leaf_spread": 0.08726987957674284, "tree_spread": 0.0882924940298015, "only_spread": 0.03324428109082307}, {"key": "falcon", "title": "Falcon-512 signature", "program": true, "leaf_cycles": 486615, "leaf_words": 23545840, "leaf_s": 0.301152583, "leaf_kib": 319.404296875, "leaf_ms": 2.5458339999999997, "tree_s": 0.134476375, "only_s": 0.087051292, "tree_ratio": 0.44905902167731254, "only_ratio": 0.2784556854893775, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.5263671875, "only_kib": 236.8232421875, "tree_ms": 3.606, "only_ms": 3.263208, "leaf_spread": 0.005611769898051971, "tree_spread": 0.015445404443717352, "only_spread": 0.04389462708950951}, {"key": "fib10k", "title": "Fibonacci, 10,000 steps", "program": false, "leaf_cycles": 10026, "leaf_words": 473995, "leaf_s": 0.030982292, "leaf_kib": 247.294921875, "leaf_ms": 2.59675, "tree_s": 0.136260959, "only_s": 0.087023334, "tree_ratio": 4.445033730880852, "only_ratio": 2.6527091477716964, "tree_words": 9569280, "only_words": 5071360, "tree_kib": 255.5576171875, "only_kib": 237.2294921875, "tree_ms": 3.4212919999999998, "only_ms": 2.847041, "leaf_spread": 0.4195125073380627, "tree_spread": 0.010688123808082185, "only_spread": 0.031290446766840764}, {"key": "fib100k", "title": "Fibonacci, 100,000 steps", "program": false, "leaf_cycles": 100206, "leaf_words": 3685259, "leaf_s": 0.068879917, "leaf_kib": 290.958984375, "leaf_ms": 2.280541, "tree_s": 0.136526375, "only_s": 0.090058625, "tree_ratio": 1.9585502355365159, "only_ratio": 1.3387318999064248, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.5888671875, "only_kib": 235.6982421875, "tree_ms": 3.406542, "only_ms": 3.000708, "leaf_spread": 0.02972383082285079, "tree_spread": 0.04557483489911748, "only_spread": 0.11275016690516872}, {"key": "fib1m", "title": "Fibonacci, 1,000,000 steps", "program": false, "leaf_cycles": 1002006, "leaf_words": 29375371, "leaf_s": 0.32390625, "leaf_kib": 340.638671875, "leaf_ms": 2.158875, "tree_s": 0.134615709, "only_s": 0.089111833, "tree_ratio": 0.41525659971056433, "only_ratio": 0.2739870480429712, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 255.7763671875, "only_kib": 236.2607421875, "tree_ms": 3.555667, "only_ms": 3.126791, "leaf_spread": 0.003936197588036723, "tree_spread": 0.00785290964815995, "only_spread": 0.09402931931610027}, {"key": "fib8m", "title": "Fibonacci, 8,000,000 steps", "program": false, "leaf_cycles": 8016007, "leaf_words": 234896267, "leaf_s": 2.325529666, "leaf_kib": 390.880859375, "leaf_ms": 2.3882090000000002, "tree_s": 0.135688208, "only_s": 0.090052083, "tree_ratio": 0.05801259961257405, "only_ratio": 0.0383620730828317, "tree_words": 9569280, "only_words": 5079552, "tree_kib": 256.0263671875, "only_kib": 236.8857421875, "tree_ms": 3.602042, "only_ms": 3.211541, "leaf_spread": 0.027660813336620668, "tree_spread": 0.012012525067764082, "only_spread": 0.02012168891196007}], "sweep": [{"cycles": 1008, "leaf": 43915, "tree": 9569280, "only": 2851328}, {"cycles": 10026, "leaf": 473995, "tree": 9569280, "only": 5071360}, {"cycles": 100206, "leaf": 3685259, "tree": 9569280, "only": 5079552}, {"cycles": 1002006, "leaf": 29375371, "tree": 9569280, "only": 5079552}, {"cycles": 8016007, "leaf": 234896267, "tree": 9569280, "only": 5079552}], "cap": {"program": [{"title": "Shielded transfer", "words": 2972322944, "cycles": 75301564}, {"title": "secp256k1 signature", "words": 5954997376, "cycles": 139080505}, {"title": "Private L1 state proof", "words": 2972322944, "cycles": 77102912}, {"title": "Falcon-512 signature", "words": 2972322944, "cycles": 77135207}], "g16": {"title": "Groth16 verifier (PR 499)", "words": 493957744, "cycles": 11591801}, "rec": {"title": "Any leaf", "tree": 9569280, "only": 5079552}}, "brk": [{"title": "Shielded transfer", "total": 75301564, "parts": [{"key": "prog", "name": "The old program: reading it and evaluating its columns", "cycles": 24962888}, {"key": "flock", "name": "Flock circuits, fixed by the version", "cycles": 16163233}, {"key": "proof", "name": "Checking the proof: WHIR, ring switching, sumchecks, hashing", "cycles": 26059953}, {"key": "rest", "name": "Memory copies and the rest", "cycles": 8115490}]}, {"title": "secp256k1 signature", "total": 139080505, "parts": [{"key": "prog", "name": "The old program: reading it and evaluating its columns", "cycles": 83382553}, {"key": "flock", "name": "Flock circuits, fixed by the version", "cycles": 16170203}, {"key": "proof", "name": "Checking the proof: WHIR, ring switching, sumchecks, hashing", "cycles": 30674862}, {"key": "rest", "name": "Memory copies and the rest", "cycles": 8852887}]}, {"title": "Groth16 verifier (PR 499)", "total": 11591801, "parts": [{"key": "g16", "name": "A Groth16 verifier, not broken down", "cycles": 11591801}]}], "parts": [["prog", "The old program: reading it and evaluating its columns"], ["flock", "Flock circuits, fixed by the version"], ["proof", "Checking the proof: WHIR, ring switching, sumchecks, hashing"], ["rest", "Memory copies and the rest"]]}</script>
 <script>
 (() => {
 const D = JSON.parse(document.getElementById('data').textContent);
@@ -248,8 +250,9 @@ function mark(svg, s, cx, cy, hollow) {
   else el('rect', {x: cx - 5, y: cy - 5, width: 10, height: 10, rx: 1.5, ...a}, svg);
 }
 const icon = s => { const v = el('svg', {width: 14, height: 14, viewBox: '0 0 14 14', 'aria-hidden': 'true'}); mark(v, s, 7, 7); return v.outerHTML; };
-document.getElementById('key0').innerHTML = [SERIES.tree, SERIES.only, SERIES.guest]
-  .map(s => `<span>${icon(s)}${s.name}</span>`).join('');
+const G16 = {...SERIES.guest, name: 'Groth16 verifier as a program (PR 499)'};
+document.getElementById('key0').innerHTML = [[SERIES.guest], [G16, true], [SERIES.tree], [SERIES.only]]
+  .map(([s, hollow]) => { const v = el('svg', {width: 14, height: 14, viewBox: '0 0 14 14', 'aria-hidden': 'true'}); mark(v, s, 7, 7, hollow); return `<span>${v.outerHTML}${s.name}</span>`; }).join('');
 for (const id of ['key1', 'key2']) document.getElementById(id).innerHTML =
   [SERIES.leaf, SERIES.tree, SERIES.only].map(s => `<span>${icon(s)}${s.name}</span>`).join('') +
   (id === 'key2' ? `<span>${icon({...SERIES.leaf, shape: 'diamond'}).replace('fill="var(--s-riscv)"', 'fill="var(--surface)"')}A program's leaf</span>` : '');
@@ -264,35 +267,61 @@ const labelWidth = (names, size, weight = 600) => {
 function capFigure() {
   const host = document.getElementById('fig-cap');
   const W = host.clientWidth, narrow = W < 560;
-  const rows = D.cap, lineH = 30, T = 18, B = 26;
-  const L = Math.ceil(labelWidth(rows.map(r => r.title), 12)) + 16, R = 12;
-  const H = T + rows.length * lineH + B;
+  // On a narrow screen each row's name sits above its markers, so the scale keeps the width.
+  const C = D.cap, P = 2 ** 28, lineH = narrow ? 40 : 28, headH = narrow ? 40 : 26, gap = 12, T = 18, B = 40;
+  const names = [...C.program.map(r => r.title), C.g16.title, C.rec.title];
+  const L = narrow ? 14 : Math.ceil(labelWidth(names, 12)) + 16, R = 44;
+  const groups = [
+    {title: 'Old verifier as a program', keep: 'later forks keep nothing from the old version',
+     rows: [...C.program.map(r => ({...r, kind: 'guest'})), {...C.g16, kind: 'g16'}]},
+    {title: 'Recursion machine', keep: 'later forks keep a circuit for each old verifier', rows: [{...C.rec, kind: 'rec'}]},
+  ];
+  const H = T + groups.reduce((h, g) => h + headH + g.rows.length * lineH + gap, 0) - gap + B;
   host.innerHTML = '';
-  const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Committed words of each way to wrap, against one proof'}, host);
-  const lo = 21, hi = 35;
-  const px = w => L + (Math.log2(w) - lo) / (hi - lo) * (W - L - R);
-  for (let e = lo + 1; e <= hi; e += narrow ? 4 : 2) {
-    el('line', {x1: px(2 ** e), x2: px(2 ** e), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
-    text(svg, {x: px(2 ** e), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, '2^' + e);
+  const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'How many leanVM proofs the second proof needs, by route'}, host);
+  const lo = Math.log10(0.008), hi = Math.log10(60);
+  const px = m => L + (Math.log10(m) - lo) / (hi - lo) * (W - L - R);
+  for (const [t, s] of [[0.01, '1/100'], [0.1, '1/10'], [1, '1'], [10, '10']]) {
+    el('line', {x1: px(t), x2: px(t), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
+    text(svg, {x: px(t), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, s);
   }
-  el('line', {x1: px(2 ** 28), x2: px(2 ** 28), y1: T - 6, y2: H - B, stroke: 'var(--ink-2)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3'}, svg);
-  text(svg, {x: px(2 ** 28) + 6, y: T - 6, 'font-size': 11.5, fill: 'var(--ink-2)'}, 'one proof');
-  rows.forEach((r, i) => {
-    const cy = T + i * lineH + lineH / 2;
-    text(svg, {x: L - 12, y: cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink)', 'font-weight': 600}, r.title);
-    const xs = ['tree', 'only', 'guest'].filter(k => r[k]).map(k => px(r[k]));
-    if (xs.length > 1) el('line', {x1: Math.min(...xs), x2: Math.max(...xs), y1: cy, y2: cy, stroke: 'var(--grid)', 'stroke-width': 2}, svg);
-    const lines = [[r.title, '']];
-    for (const k of ['only', 'tree', 'guest']) if (r[k]) {
-      mark(svg, SERIES[k], px(r[k]), cy);
-      lines.push([fmt(r[k]) + ' words', SERIES[k].name + (k === 'guest' ? `, ${fmt(r.guest_cycles)} cycles` : '')]);
+  text(svg, {x: L + (W - L - R) / 2, y: H - 6, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, narrow ? 'leanVM proofs of witness' : 'leanVM proofs of witness (2^28 words each)');
+  el('line', {x1: px(1), x2: px(1), y1: T - 6, y2: H - B, stroke: 'var(--ink-2)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3'}, svg);
+  text(svg, {x: px(1) + 6, y: T - 6, 'font-size': 11.5, fill: 'var(--ink-2)'}, 'one proof');
+  const times = m => (m >= 2 ? m.toFixed(0) : m >= 1 ? m.toFixed(1) : m.toFixed(2)) + '×';
+  let y0 = T;
+  for (const g of groups) {
+    // The group's name on a surface band, so gridlines pass behind it, then what later forks keep.
+    const t = text(svg, {x: 0, y: y0 + 15, 'font-size': 12.5, fill: 'var(--ink)', 'font-weight': 650}, g.title);
+    const tw = t.getComputedTextLength();
+    const k = narrow ? text(svg, {x: 0, y: y0 + 31, 'font-size': 12, fill: 'var(--ink-3)'}, g.keep)
+      : text(svg, {x: tw + 10, y: y0 + 15, 'font-size': 12, fill: 'var(--ink-3)'}, '· ' + g.keep);
+    const bw = narrow ? Math.max(tw, k.getComputedTextLength()) : tw + 10 + k.getComputedTextLength();
+    svg.insertBefore(el('rect', {x: 0, y: y0, width: bw + 8, height: headH - 6, fill: 'var(--surface)'}, null), t);
+    y0 += headH;
+    for (const r of g.rows) {
+      const cy = y0 + lineH / 2 + (narrow ? 7 : 0), ref = r.kind === 'g16';
+      const name = {'font-size': 12, fill: ref ? 'var(--ink-2)' : 'var(--ink)', 'font-weight': ref ? 400 : 600};
+      if (narrow) text(svg, {x: 0, y: cy - 12, ...name}, r.title);
+      else text(svg, {x: L - 12, y: cy + 4, 'text-anchor': 'end', ...name}, r.title);
+      if (r.kind === 'rec') {
+        const [a, b] = [r.only / P, r.tree / P];
+        el('line', {x1: px(a), x2: px(b), y1: cy, y2: cy, stroke: 'var(--grid)', 'stroke-width': 2}, svg);
+        mark(svg, SERIES.only, px(a), cy); mark(svg, SERIES.tree, px(b), cy);
+        text(svg, {x: px(b) + 11, y: cy + 4, 'font-size': 11.5, 'font-weight': 600, fill: 'var(--ink-2)'}, `${times(a)} to ${times(b)}`);
+        hover(el('rect', {x: L, y: cy - lineH / 2, width: W - L, height: lineH, fill: 'transparent'}, svg), [[r.title, ''],
+          [fmt(r.only) + ' words', SERIES.only.name], [fmt(r.tree) + ' words', SERIES.tree.name]]);
+      } else {
+        const m = r.words / P;
+        mark(svg, ref ? G16 : SERIES.guest, px(m), cy, ref);
+        text(svg, {x: px(m) + 11, y: cy + 4, 'font-size': 11.5, 'font-weight': 600, fill: 'var(--ink-2)'}, times(m));
+        hover(el('rect', {x: L, y: cy - lineH / 2, width: W - L, height: lineH, fill: 'transparent'}, svg), [[r.title, ''],
+          [times(m) + ' one proof', `${fmt(r.words)} words`], [fmt(r.cycles) + ' cycles', ref ? 'Groth16 verifier' : 'old leanVM verifier']]);
+      }
+      y0 += lineH;
     }
-    // The figure's point: how many proofs the program would need.
-    const over = r.guest / 2 ** 28;
-    text(svg, {x: px(r.guest) + 11, y: cy + 4, 'font-size': 11.5, 'font-weight': 600, fill: 'var(--ink-2)'},
-      `${over >= 2 ? over.toFixed(0) : over.toFixed(1)}× one proof`);
-    hover(el('rect', {x: L, y: cy - lineH / 2, width: W - L, height: lineH, fill: 'transparent'}, svg), lines);
-  });
+    y0 += gap;
+  }
 }
 
 // Ink for a label set inside a fill: white on dark fills, near-black on light ones.
@@ -379,7 +408,7 @@ function timeFigure() {
 function sizeFigure() {
   const host = document.getElementById('fig-size');
   const W = host.clientWidth, narrow = W < 560;
-  const L = 58, R = narrow ? 12 : 130, T = 10, B = 34, H = 300;
+  const L = 58, R = narrow ? 20 : 130, T = 10, B = 34, H = 300;
   host.innerHTML = '';
   const svg = el('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Committed words of each leaf and of its wrap'}, host);
   const xlo = 3, xhi = 7, ylo = 15, yhi = 28.5;
@@ -387,7 +416,8 @@ function sizeFigure() {
   const py = w => T + (yhi - Math.log2(w)) / (yhi - ylo) * (H - T - B);
   for (let e = xlo; e <= xhi; e++) {
     el('line', {x1: px(10 ** e), x2: px(10 ** e), y1: T, y2: H - B, stroke: 'var(--grid)', 'stroke-width': 1}, svg);
-    text(svg, {x: px(10 ** e), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, (10 ** e).toLocaleString('en-US'));
+    text(svg, {x: px(10 ** e), y: H - B + 16, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'},
+      narrow ? ['1K', '10K', '100K', '1M', '10M'][e - 3] : (10 ** e).toLocaleString('en-US'));
   }
   text(svg, {x: L + (W - L - R) / 2, y: H - 4, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--ink-3)'}, 'leaf cycles');
   for (let e = 16; e <= 28; e += 2) {
